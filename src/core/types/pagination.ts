@@ -1,6 +1,5 @@
-export type PaginatedResponse<T, ItemsKey extends string = 'items'> = {
-  [K in ItemsKey]: T[];
-} & {
+export type PaginatedResponse<T> = {
+  items: T[];
   total: number;
   pages: number;
   limit: number;
