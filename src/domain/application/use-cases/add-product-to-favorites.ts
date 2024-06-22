@@ -49,7 +49,7 @@ export class AddProductToFavorites
         throw new EntityNotFoundError('Produto', productId);
       }
 
-      const customerFavoriteProduct = new CustomerFavoriteProduct({
+      const customerFavoriteProduct = CustomerFavoriteProduct.create({
         customerId: customerEntityId,
         product,
       });

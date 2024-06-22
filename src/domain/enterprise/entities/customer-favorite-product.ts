@@ -8,9 +8,10 @@ export type CustomerFavoriteProductProps = {
 };
 
 export class CustomerFavoriteProduct extends Entity<CustomerFavoriteProductProps> {
-  constructor(props: CustomerFavoriteProductProps) {
-    super(props);
+  static create(props: CustomerFavoriteProductProps, id?: UniqueEntityID) {
+    return new CustomerFavoriteProduct(props, id);
   }
+
   get customerId(): UniqueEntityID {
     return this.props.customerId;
   }
