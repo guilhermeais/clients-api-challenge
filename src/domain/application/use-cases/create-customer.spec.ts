@@ -7,6 +7,7 @@ import {
 import { MockProxy, mock } from 'vitest-mock-extended';
 import { faker } from '@faker-js/faker';
 import { InvalidEmailFormatError } from '@/domain/enterprise/entities/value-objects/errors/invalid-email-format-error';
+import { CustomerAlreadyExistsError } from './errors/customer-already-exists';
 
 function makeCreateCustomerRequest(
   modifications?: Partial<CreateCustomerRequest>,
@@ -25,6 +26,9 @@ describe(`${CreateCustomerUseCase.name}`, () => {
 
   beforeEach(() => {
     customerRepo = mock();
+    customerRepo.save.mockResolvedValue();
+    customerRepo.existsByEmail.mockResolvedValue(false);
+
     logger = mock();
 
     sut = new CreateCustomerUseCase(customerRepo, logger);
@@ -50,6 +54,19 @@ describe(`${CreateCustomerUseCase.name}`, () => {
 
     await expect(sut.execute(request)).rejects.toThrowError(
       new InvalidEmailFormatError(invalidEmail),
+    );
+
+    expect(customerRepo.save).not.toHaveBeenCalled();
+  });
+
+  it('should not create a customer with duplicated email', async () => {
+    const email = faker.internet.email();
+    customerRepo.existsByEmail.mockResolvedValue(true);
+
+    const request = makeCreateCustomerRequest({ email });
+
+    await expect(sut.execute(request)).rejects.toThrowError(
+      new CustomerAlreadyExistsError(email),
     );
 
     expect(customerRepo.save).not.toHaveBeenCalled();

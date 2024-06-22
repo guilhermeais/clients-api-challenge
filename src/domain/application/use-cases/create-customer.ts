@@ -3,6 +3,7 @@ import { Customer } from '@/domain/enterprise/entities/customer';
 import { Email } from '@/domain/enterprise/entities/value-objects/email';
 import { CustomerRepository } from '../gateways/repositories/customer-repository.interface';
 import { Logger } from '../gateways/tools/logger.interface';
+import { CustomerAlreadyExistsError } from './errors/customer-already-exists';
 
 export type CreateCustomerRequest = {
   name: string;
@@ -27,6 +28,11 @@ export class CreateCustomerUseCase
       );
 
       const email = Email.create(request.email);
+
+      const exists = await this.customerRepo.existsByEmail(email);
+      if (exists) {
+        throw new CustomerAlreadyExistsError(email.value);
+      }
       const customer = Customer.create({
         name: request.name,
         email,
