@@ -30,6 +30,7 @@ export class CreateCustomerUseCase
       const email = Email.create(request.email);
 
       const exists = await this.customerRepo.existsByEmail(email);
+
       if (exists) {
         throw new CustomerAlreadyExistsError(email.value);
       }

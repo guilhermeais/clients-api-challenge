@@ -12,8 +12,16 @@ export class Customer extends Entity<CustomerProps> {
     return this.props.name;
   }
 
+  set name(name: string) {
+    this.props.name = name;
+  }
+
   get email(): Email {
     return this.props.email;
+  }
+
+  set email(email: Email) {
+    this.props.email = email;
   }
 
   public static create(
