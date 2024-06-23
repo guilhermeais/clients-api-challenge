@@ -1,11 +1,11 @@
-import { UseCase } from '@/core/types/use-case';
-import { CustomerRepository } from '../gateways/repositories/customer-repository.interface';
-import { Logger } from '../gateways/tools/logger.interface';
 import { UniqueEntityID } from '@/core/entities/unique-entity-id';
 import { EntityNotFoundError } from '@/core/errors/commom/entity-not-found-error';
-import { ProductsServiceGateway } from '../gateways/external/products-service.interface';
+import { UseCase } from '@/core/types/use-case';
 import { CustomerFavoriteProduct } from '@/domain/enterprise/entities/customer-favorite-product';
+import { ProductsServiceGateway } from '../gateways/external/products-service.interface';
 import { CustomerFavoriteProductsRepository } from '../gateways/repositories/customer-favorite-products.repository';
+import { CustomerRepository } from '../gateways/repositories/customer-repository.interface';
+import { Logger } from '../gateways/tools/logger.interface';
 
 export type AddProductToFavoritesRequest = {
   customerId: string;
