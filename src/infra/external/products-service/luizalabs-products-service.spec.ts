@@ -9,6 +9,7 @@ import { EnvService } from '@/infra/env/env.service';
 import { faker } from '@faker-js/faker';
 import { Product } from '@/domain/enterprise/entities/product';
 import { UniqueEntityID } from '@/core/entities/unique-entity-id';
+import { ExternalApiError } from '../errors/external-api-error';
 
 function makeLuizaLabsProduct(
   modifications?: Partial<LuizaLabsProduct>,
@@ -73,6 +74,26 @@ describe(`${LuizaLabsProductsService.name}`, () => {
 
       expect(httpClient.get).toHaveBeenCalledWith(
         new URL(`${baseUrl}/product/${defaultLuizaLabsProduct.id}`),
+      );
+    });
+
+    it('should return null if an external api error is thrown from the http client', async () => {
+      httpClient.get.mockRejectedValue(
+        new ExternalApiError(404, 'Product not found'),
+      );
+
+      const product = await sut.findById(defaultLuizaLabsProduct.id);
+
+      expect(product).toBeNull();
+    });
+
+    it('should throw an error if an unexpected error is thrown from the http client', async () => {
+      httpClient.get.mockRejectedValue(
+        new ExternalApiError(500, 'Unexpected error'),
+      );
+
+      await expect(sut.findById(defaultLuizaLabsProduct.id)).rejects.toThrow(
+        new ExternalApiError(500, 'Unexpected error'),
       );
     });
   });

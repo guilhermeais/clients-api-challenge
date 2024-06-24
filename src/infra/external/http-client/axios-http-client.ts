@@ -1,8 +1,8 @@
-import axios, { isAxiosError } from 'axios';
-import { GetOptions, HttpClient, HttpResponse } from '../http-client.interface';
-import { BaseError } from '@/core/errors/base-error';
-import { HttpStatus } from '@nestjs/common';
 import { Logger } from '@/domain/application/gateways/tools/logger.interface';
+import { HttpStatus } from '@nestjs/common';
+import axios, { isAxiosError } from 'axios';
+import { ExternalApiError } from '../errors/external-api-error';
+import { GetOptions, HttpClient, HttpResponse } from '../http-client.interface';
 
 export class AxiosHttpClient implements HttpClient {
   constructor(private readonly logger: Logger) {}
@@ -40,12 +40,10 @@ export class AxiosHttpClient implements HttpClient {
           error.stack,
         );
 
-        throw new BaseError({
-          message: `Erro ${error.response.status} ao acessar aplicação externa.`,
-          code: error.response?.status ?? HttpStatus.INTERNAL_SERVER_ERROR,
-          details: `Erro: ${JSON.stringify(error.response?.data)}`,
-          isClientError: false,
-        });
+        throw new ExternalApiError(
+          error.response?.status,
+          error.response?.data,
+        );
       }
 
       this.logger.error(
@@ -54,11 +52,10 @@ export class AxiosHttpClient implements HttpClient {
         error.stack,
       );
 
-      throw new BaseError({
-        message: error.message,
-        code: HttpStatus.INTERNAL_SERVER_ERROR,
-        isClientError: false,
-      });
+      throw new ExternalApiError(
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        error.message,
+      );
     }
   }
 }

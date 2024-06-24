@@ -4,6 +4,7 @@ import { Logger } from '@/domain/application/gateways/tools/logger.interface';
 import { Product } from '@/domain/enterprise/entities/product';
 import { EnvService } from '@/infra/env/env.service';
 import { HttpClient } from '../http-client.interface';
+import { ExternalApiError } from '../errors/external-api-error';
 
 export type LuizaLabsProduct = {
   price: number;
@@ -52,6 +53,12 @@ export class LuizaLabsProductsService implements ProductsServiceGateway {
         `Error while trying to find product with id ${id}: ${error.message}`,
         error.stack,
       );
+
+      if (error instanceof ExternalApiError) {
+        if (error.statusCode === 404) {
+          return null;
+        }
+      }
 
       throw error;
     }

@@ -1,7 +1,7 @@
-import { mock } from 'vitest-mock-extended';
-import { AxiosHttpClient } from './axios-http-client';
 import nock from 'nock';
-import { BaseError } from '@/core/errors/base-error';
+import { mock } from 'vitest-mock-extended';
+import { ExternalApiError } from '../errors/external-api-error';
+import { AxiosHttpClient } from './axios-http-client';
 
 describe(AxiosHttpClient.name, () => {
   let sut: AxiosHttpClient;
@@ -31,14 +31,7 @@ describe(AxiosHttpClient.name, () => {
       });
 
       await expect(sut.get(new URL(url))).rejects.toThrow(
-        new BaseError({
-          message: `Erro ${400} ao acessar aplicação externa.`,
-          code: 400,
-          details: `Erro: ${JSON.stringify({
-            message: 'error',
-          })}`,
-          isClientError: false,
-        }),
+        new ExternalApiError(400, { message: 'error' }),
       );
     });
   });
