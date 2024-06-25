@@ -24,9 +24,13 @@ export class Customer extends Entity<CustomerProps> {
     this.props.email = email;
   }
 
-  public static create(
+  public static create(props: CustomerProps, timestamp?: Timestamp) {
+    return new Customer(props, undefined, timestamp);
+  }
+
+  public static restore(
     props: CustomerProps,
-    id?: UniqueEntityID,
+    id: UniqueEntityID,
     timestamp?: Timestamp,
   ) {
     return new Customer(props, id, timestamp);
