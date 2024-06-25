@@ -1,5 +1,6 @@
-import { Logger, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { PinoLogger } from './logger/pino.logger';
+import { Logger } from '@/domain/application/gateways/tools/logger.interface';
 
 @Module({
   providers: [
