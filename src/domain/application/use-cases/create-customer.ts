@@ -4,6 +4,7 @@ import { Email } from '@/domain/enterprise/entities/value-objects/email';
 import { CustomerRepository } from '../gateways/repositories/customer-repository.interface';
 import { Logger } from '../gateways/tools/logger.interface';
 import { CustomerAlreadyExistsError } from './errors/customer-already-exists';
+import { Injectable } from '@nestjs/common';
 
 export type CreateCustomerRequest = {
   name: string;
@@ -12,6 +13,7 @@ export type CreateCustomerRequest = {
 
 export type CreateCustomerResponse = Customer;
 
+@Injectable()
 export class CreateCustomerUseCase
   implements UseCase<CreateCustomerRequest, CreateCustomerResponse>
 {
