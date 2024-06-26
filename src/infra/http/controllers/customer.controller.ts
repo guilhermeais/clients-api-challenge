@@ -3,6 +3,10 @@ import { CreateCustomerUseCase } from '@/domain/application/use-cases/create-cus
 import { Body, Controller, Post } from '@nestjs/common';
 import { ZodValidationPipe } from '../pipes/zod-validation.pipe';
 import {
+  CustomerHttpResponse,
+  CustomerPresenter,
+} from './presenters/customer.presenter';
+import {
   CreateCustomerSchema,
   TCreateCustomerSchema,
 } from './schemas/create-customer.schema';
@@ -18,7 +22,7 @@ export class CustomerController {
   async createCustomer(
     @Body(new ZodValidationPipe(CreateCustomerSchema))
     body: TCreateCustomerSchema,
-  ) {
+  ): Promise<CustomerHttpResponse> {
     try {
       this.logger.log(
         CustomerController.name,
@@ -35,12 +39,12 @@ export class CustomerController {
         `Customer created ${body.email} with id ${customer.id}`,
       );
 
-      return customer;
+      return CustomerPresenter.toHTTP(customer);
     } catch (error) {
       this.logger.error(
         CustomerController.name,
-        `Error creating customer with name ${body.name} and email ${body.email}`,
-        error,
+        `Error creating customer with name ${body.name} and email ${body.email}: ${error?.message}`,
+        error?.stack,
       );
 
       throw error;
