@@ -163,4 +163,36 @@ describe(`${CustomerController.name} E2E`, () => {
       expect(customerUpdated.email.value).toBe(newEmail);
     });
   });
+
+  describe('[DELETE] /customers/:id', () => {
+    it('should delete an existing customer', async () => {
+      const customer = makeCustomer();
+      await customerRepository.save(customer);
+
+      const response = await request(app.getHttpServer()).delete(
+        `/customers/${customer.id.toString()}`,
+      );
+
+      expect(response.status).toBe(204);
+
+      const customerDeleted = await customerRepository.findById(customer.id);
+
+      expect(customerDeleted).toBeNull();
+    });
+
+    it('should return 404 if the customer does not exists', async () => {
+      const id = new UniqueEntityID().toString();
+      const response = await request(app.getHttpServer()).delete(
+        `/customers/${id}`,
+      );
+
+      expect(response.status).toBe(404);
+      expect(response.body).toEqual({
+        details: `A entidade Cliente - ${id} não foi encontrada`,
+        error: 'EntityNotFoundError',
+        message: ['Recurso não encontrado!'],
+        statusCode: 404,
+      });
+    });
+  });
 });

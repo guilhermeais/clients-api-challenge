@@ -1,8 +1,9 @@
-import { UseCase } from '@/core/types/use-case';
-import { CustomerRepository } from '../gateways/repositories/customer-repository.interface';
-import { Logger } from '../gateways/tools/logger.interface';
 import { UniqueEntityID } from '@/core/entities/unique-entity-id';
 import { EntityNotFoundError } from '@/core/errors/commom/entity-not-found-error';
+import { UseCase } from '@/core/types/use-case';
+import { Injectable } from '@nestjs/common';
+import { CustomerRepository } from '../gateways/repositories/customer-repository.interface';
+import { Logger } from '../gateways/tools/logger.interface';
 
 export type DeleteCustomerRequest = {
   id: string;
@@ -10,6 +11,7 @@ export type DeleteCustomerRequest = {
 
 export type DeleteCustomerResponse = void;
 
+@Injectable()
 export class DeleteCustomerUseCase
   implements UseCase<DeleteCustomerRequest, DeleteCustomerResponse>
 {
