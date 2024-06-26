@@ -9,6 +9,7 @@ import { CustomerController } from './customer.controller';
 import { TCreateCustomerSchema } from './schemas/create-customer.schema';
 import { CustomerHttpResponse } from './presenters/customer.presenter';
 import { UniqueEntityID } from '@/core/entities/unique-entity-id';
+import { makeCustomer } from 'test/mocks/domain/enterprise/entities/customer.mock';
 
 describe(`${CustomerController.name} E2E`, () => {
   let app: INestApplication;
@@ -59,6 +60,67 @@ describe(`${CustomerController.name} E2E`, () => {
       );
 
       expect(customerOnRepository).toBeDefined();
+    });
+
+    it('should not create an customer with invalid email', async () => {
+      const bodyRequest = makeCreateCustomerBodyRequest({
+        email: 'invalid-email',
+      });
+
+      const response = await request(app.getHttpServer())
+        .post('/customers')
+        .send(bodyRequest);
+
+      expect(response.status).toBe(400);
+
+      expect(response.body).toEqual({
+        error: 'BadRequestException',
+        message: [
+          'E-mail do cliente deve estar no formato válido (mail@mail.com)!',
+        ],
+        statusCode: 400,
+      });
+    });
+
+    it('should not create an customer without a name', async () => {
+      const bodyRequest = makeCreateCustomerBodyRequest({
+        name: null,
+      });
+
+      const response = await request(app.getHttpServer())
+        .post('/customers')
+        .send(bodyRequest);
+
+      expect(response.status).toBe(400);
+
+      expect(response.body).toEqual({
+        error: 'BadRequestException',
+        message: ['Nome do cliente é obrigatório!'],
+        statusCode: 400,
+      });
+    });
+
+    it('should not create a customer with email in use', async () => {
+      const existingCustomer = makeCustomer();
+      await customerRepository.save(existingCustomer);
+
+      const bodyRequest = makeCreateCustomerBodyRequest({
+        email: existingCustomer.email.value,
+      });
+
+      const response = await request(app.getHttpServer())
+        .post('/customers')
+        .send(bodyRequest);
+
+      expect(response.status).toBe(409);
+      expect(response.body).toEqual({
+        error: 'CustomerAlreadyExistsError',
+        message: [
+          `Já existe um cliente usando o email ${existingCustomer.email.value}!`,
+        ],
+        details: '',
+        statusCode: 409,
+      });
     });
   });
 });
