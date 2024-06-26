@@ -1,7 +1,7 @@
-import { ObjectId } from 'bson';
+import { uuidv7 } from 'uuidv7';
 
 export class UniqueEntityID {
-  private value: ObjectId;
+  private value: string;
 
   toString() {
     return this.value.toString();
@@ -11,11 +11,11 @@ export class UniqueEntityID {
     return this.value;
   }
 
-  constructor(value?: ObjectId) {
-    this.value = value ?? new ObjectId();
+  constructor(value?: string) {
+    this.value = value ?? uuidv7();
   }
 
   public equals(id: UniqueEntityID) {
-    return this.value.equals(id.value);
+    return id.toValue() === this.value;
   }
 }

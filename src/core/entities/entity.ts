@@ -36,7 +36,7 @@ export abstract class Entity<Props> {
     this._id = id ?? new UniqueEntityID();
 
     this._createdAt = timestamp?.createdAt ?? new Date();
-    this._updatedAt = timestamp?.updatedAt;
+    this._updatedAt = timestamp?.updatedAt ?? new Date();
   }
 
   public equals(entity: Entity<unknown>) {
