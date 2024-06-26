@@ -1,15 +1,15 @@
+import { UniqueEntityID } from '@/core/entities/unique-entity-id';
 import { Logger } from '@/domain/application/gateways/tools/logger.interface';
+import { Product } from '@/domain/enterprise/entities/product';
+import { EnvService } from '@/infra/env/env.service';
+import { faker } from '@faker-js/faker';
+import { MockProxy, mock } from 'vitest-mock-extended';
+import { ExternalApiError } from '../errors/external-api-error';
+import { HttpClient } from '../http-client.interface';
 import {
   LuizaLabsProduct,
   LuizaLabsProductsService,
 } from './luizalabs-products-service';
-import { MockProxy, mock } from 'vitest-mock-extended';
-import { HttpClient } from '../http-client.interface';
-import { EnvService } from '@/infra/env/env.service';
-import { faker } from '@faker-js/faker';
-import { Product } from '@/domain/enterprise/entities/product';
-import { UniqueEntityID } from '@/core/entities/unique-entity-id';
-import { ExternalApiError } from '../errors/external-api-error';
 
 function makeLuizaLabsProduct(
   modifications?: Partial<LuizaLabsProduct>,
