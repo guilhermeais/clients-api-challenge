@@ -6,6 +6,7 @@ import { UniqueEntityID } from '@/core/entities/unique-entity-id';
 import { EntityNotFoundError } from '@/core/errors/commom/entity-not-found-error';
 import { Email } from '@/domain/enterprise/entities/value-objects/email';
 import { CustomerAlreadyExistsError } from './errors/customer-already-exists';
+import { Injectable } from '@nestjs/common';
 
 export type UpdateCustomerRequest = {
   id: string;
@@ -15,6 +16,7 @@ export type UpdateCustomerRequest = {
 
 export type UpdateCustomerResponse = Customer;
 
+@Injectable()
 export class UpdateCustomerUseCase
   implements UseCase<UpdateCustomerRequest, UpdateCustomerResponse>
 {

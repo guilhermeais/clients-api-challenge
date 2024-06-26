@@ -29,7 +29,7 @@ describe(`${CustomerController.name} E2E`, () => {
     await app.init();
   });
 
-  describe('POST /customers', () => {
+  describe('[POST] /customers', () => {
     function makeCreateCustomerBodyRequest(
       modifications?: Partial<TCreateCustomerSchema>,
     ): TCreateCustomerSchema {
@@ -121,6 +121,46 @@ describe(`${CustomerController.name} E2E`, () => {
         details: '',
         statusCode: 409,
       });
+    });
+  });
+
+  describe('[PATCH] /customers/:id', () => {
+    it('should update an customer name', async () => {
+      const customer = makeCustomer();
+      await customerRepository.save(customer);
+
+      const newName = faker.person.fullName();
+
+      const response = await request(app.getHttpServer())
+        .patch(`/customers/${customer.id.toString()}`)
+        .send({
+          name: newName,
+        });
+
+      expect(response.status).toBe(204);
+
+      const customerUpdated = await customerRepository.findById(customer.id);
+
+      expect(customerUpdated.name).toBe(newName);
+    });
+
+    it('should update an customer name', async () => {
+      const customer = makeCustomer();
+      await customerRepository.save(customer);
+
+      const newEmail = faker.internet.email();
+
+      const response = await request(app.getHttpServer())
+        .patch(`/customers/${customer.id.toString()}`)
+        .send({
+          email: newEmail,
+        });
+
+      expect(response.status).toBe(204);
+
+      const customerUpdated = await customerRepository.findById(customer.id);
+
+      expect(customerUpdated.email.value).toBe(newEmail);
     });
   });
 });
