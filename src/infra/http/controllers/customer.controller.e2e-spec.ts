@@ -1,15 +1,16 @@
+import { UniqueEntityID } from '@/core/entities/unique-entity-id';
 import { CustomerRepository } from '@/domain/application/gateways/repositories/customer-repository.interface';
 import { DatabaseModule } from '@/infra/database/database.module';
 import { faker } from '@faker-js/faker';
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
+import { makeCustomer } from 'test/mocks/domain/enterprise/entities/customer.mock';
 import { makeFakeApp } from 'test/utils/make-fake-app';
 import { DefaultExceptionFilter } from '../filters/default-exception-filter.filter';
 import { CustomerController } from './customer.controller';
-import { TCreateCustomerSchema } from './schemas/create-customer.schema';
 import { CustomerHttpResponse } from './presenters/customer.presenter';
-import { UniqueEntityID } from '@/core/entities/unique-entity-id';
-import { makeCustomer } from 'test/mocks/domain/enterprise/entities/customer.mock';
+import { TCreateCustomerSchema } from './schemas/create-customer.schema';
+import { TListCustomersResponse } from './schemas/list-customers.schema';
 
 describe(`${CustomerController.name} E2E`, () => {
   let app: INestApplication;
@@ -27,6 +28,92 @@ describe(`${CustomerController.name} E2E`, () => {
     customerRepository = moduleRef.get(CustomerRepository);
 
     await app.init();
+  });
+
+  describe('[GET] /customers', () => {
+    it('should get empty customers if there is no customer', async () => {
+      const response = await request(app.getHttpServer()).get('/customers');
+
+      expect(response.status).toBe(200);
+      const responseBody = response.body as TListCustomersResponse;
+
+      expect(responseBody).toEqual<TListCustomersResponse>({
+        items: [],
+        limit: 10,
+        pages: 0,
+        currentPage: 1,
+        total: 0,
+      });
+    });
+
+    it('should get customers with pagination', async () => {
+      const customers = Array.from({ length: 10 }, () => makeCustomer());
+      await Promise.all(
+        customers.map((customer) => customerRepository.save(customer)),
+      );
+
+      const response = await request(app.getHttpServer()).get(
+        '/customers?limit=5',
+      );
+
+      expect(response.status).toBe(200);
+      const responseBody = response.body as TListCustomersResponse;
+
+      expect(responseBody.items).toHaveLength(5);
+      expect(responseBody.total).toBe(10);
+      expect(responseBody.pages).toBe(2);
+      expect(responseBody.currentPage).toBe(1);
+
+      const secondPage = await request(app.getHttpServer()).get(
+        '/customers?page=2&limit=5',
+      );
+
+      expect(secondPage.status).toBe(200);
+      const secondPageBody = secondPage.body as TListCustomersResponse;
+
+      expect(secondPageBody.items).toHaveLength(5);
+      expect(secondPageBody.total).toBe(10);
+      expect(secondPageBody.pages).toBe(2);
+      expect(secondPageBody.currentPage).toBe(2);
+    });
+
+    it('should get customers by email', async () => {
+      const customers = Array.from({ length: 10 }, () => makeCustomer());
+      await Promise.all(
+        customers.map((customer) => customerRepository.save(customer)),
+      );
+
+      const customerToFind = customers[5];
+
+      const response = await request(app.getHttpServer()).get(
+        `/customers?email=${customerToFind.email.value}`,
+      );
+
+      expect(response.status).toBe(200);
+      const responseBody = response.body as TListCustomersResponse;
+
+      expect(responseBody.items).toHaveLength(1);
+      expect(responseBody.items[0].id).toBe(customerToFind.id.toString());
+    });
+
+    it('should get customers by name', async () => {
+      const customers = Array.from({ length: 10 }, () => makeCustomer());
+      await Promise.all(
+        customers.map((customer) => customerRepository.save(customer)),
+      );
+
+      const customerToFind = customers[5];
+
+      const response = await request(app.getHttpServer()).get(
+        `/customers?name=${customerToFind.name}`,
+      );
+
+      expect(response.status).toBe(200);
+      const responseBody = response.body as TListCustomersResponse;
+
+      expect(responseBody.items).toHaveLength(1);
+      expect(responseBody.items[0].id).toBe(customerToFind.id.toString());
+    });
   });
 
   describe('[POST] /customers', () => {

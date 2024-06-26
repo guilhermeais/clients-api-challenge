@@ -4,6 +4,7 @@ import { Customer } from '@/domain/enterprise/entities/customer';
 import { CustomerRepository } from '../gateways/repositories/customer-repository.interface';
 import { Logger } from '../gateways/tools/logger.interface';
 import { Email } from '@/domain/enterprise/entities/value-objects/email';
+import { Injectable } from '@nestjs/common';
 
 export type ListCustomersRequest = PaginatedRequest<
   Partial<{
@@ -14,6 +15,7 @@ export type ListCustomersRequest = PaginatedRequest<
 
 export type ListCustomersResponse = PaginatedResponse<Customer>;
 
+@Injectable()
 export class ListCustomersUseCase
   implements UseCase<ListCustomersRequest, ListCustomersResponse>
 {

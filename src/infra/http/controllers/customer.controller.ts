@@ -1,15 +1,18 @@
 import { Logger } from '@/domain/application/gateways/tools/logger.interface';
 import { CreateCustomerUseCase } from '@/domain/application/use-cases/create-customer';
 import { DeleteCustomerUseCase } from '@/domain/application/use-cases/delete-customer';
+import { ListCustomersUseCase } from '@/domain/application/use-cases/list-customers';
 import { UpdateCustomerUseCase } from '@/domain/application/use-cases/update-customer';
 import {
   Body,
   Controller,
   Delete,
+  Get,
   HttpCode,
   Param,
   Patch,
   Post,
+  Query,
 } from '@nestjs/common';
 import { ZodValidationPipe } from '../pipes/zod-validation.pipe';
 import {
@@ -21,6 +24,11 @@ import {
   TCreateCustomerSchema,
 } from './schemas/create-customer.schema';
 import {
+  ListCustomersSchema,
+  TListCustomersResponse,
+  TListCustomersSchema,
+} from './schemas/list-customers.schema';
+import {
   TUpdateCustomerSchema,
   UpdateCustomerSchema,
 } from './schemas/update-customer.schema';
@@ -31,8 +39,50 @@ export class CustomerController {
     private readonly createCustomerUseCase: CreateCustomerUseCase,
     private readonly updateCustomerUseCase: UpdateCustomerUseCase,
     private readonly deleteCustomerUseCase: DeleteCustomerUseCase,
+    private readonly listCustomersUseCase: ListCustomersUseCase,
     private readonly logger: Logger,
   ) {}
+
+  @Get()
+  async listCustomers(
+    @Query(new ZodValidationPipe(ListCustomersSchema))
+    query: TListCustomersSchema,
+  ): Promise<TListCustomersResponse> {
+    try {
+      this.logger.log(
+        CustomerController.name,
+        `Listing customers with query ${JSON.stringify(query, null, 2)}`,
+      );
+
+      const customers = await this.listCustomersUseCase.execute({
+        limit: query.limit,
+        page: query.page,
+        email: query.email,
+        name: query.name,
+      });
+
+      this.logger.log(
+        CustomerController.name,
+        `Found a total of ${customers.total} customers...`,
+      );
+
+      return {
+        items: customers.items.map(CustomerPresenter.toHTTP),
+        total: customers.total,
+        limit: customers.limit,
+        currentPage: customers.currentPage,
+        pages: customers.pages,
+      };
+    } catch (error) {
+      this.logger.error(
+        CustomerController.name,
+        `Error listing customers with query ${JSON.stringify(query, null, 2)}: ${error?.message}`,
+        error?.stack,
+      );
+
+      throw error;
+    }
+  }
 
   @Post()
   async createCustomer(

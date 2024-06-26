@@ -1,5 +1,6 @@
 import { CreateCustomerUseCase } from '@/domain/application/use-cases/create-customer';
 import { DeleteCustomerUseCase } from '@/domain/application/use-cases/delete-customer';
+import { ListCustomersUseCase } from '@/domain/application/use-cases/list-customers';
 import { UpdateCustomerUseCase } from '@/domain/application/use-cases/update-customer';
 import { Module } from '@nestjs/common';
 import { DatabaseModule } from '../database/database.module';
@@ -13,6 +14,7 @@ import { CustomerController } from './controllers/customer.controller';
     CreateCustomerUseCase,
     UpdateCustomerUseCase,
     DeleteCustomerUseCase,
+    ListCustomersUseCase,
   ],
 })
 export class HttpModule {}
