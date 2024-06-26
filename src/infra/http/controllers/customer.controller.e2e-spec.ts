@@ -116,6 +116,39 @@ describe(`${CustomerController.name} E2E`, () => {
     });
   });
 
+  describe('[GET] /customers/:id', () => {
+    it('should get 404 if the customer does not exists', async () => {
+      const id = new UniqueEntityID().toString();
+      const response = await request(app.getHttpServer()).get(
+        `/customers/${id}`,
+      );
+
+      expect(response.status).toBe(404);
+      expect(response.body).toEqual({
+        details: `A entidade Cliente - ${id} não foi encontrada`,
+        error: 'EntityNotFoundError',
+        message: ['Recurso não encontrado!'],
+        statusCode: 404,
+      });
+    });
+
+    it('should get an existing customer', async () => {
+      const customer = makeCustomer();
+      await customerRepository.save(customer);
+
+      const response = await request(app.getHttpServer()).get(
+        `/customers/${customer.id.toString()}`,
+      );
+
+      expect(response.status).toBe(200);
+      const responseBody = response.body as CustomerHttpResponse;
+
+      expect(responseBody.id).toBe(customer.id.toString());
+      expect(responseBody.name).toBe(customer.name);
+      expect(responseBody.email).toBe(customer.email.value);
+    });
+  });
+
   describe('[POST] /customers', () => {
     function makeCreateCustomerBodyRequest(
       modifications?: Partial<TCreateCustomerSchema>,

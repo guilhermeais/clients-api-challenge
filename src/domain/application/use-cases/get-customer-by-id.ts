@@ -3,6 +3,7 @@ import { CustomerRepository } from '../gateways/repositories/customer-repository
 import { UniqueEntityID } from '@/core/entities/unique-entity-id';
 import { EntityNotFoundError } from '@/core/errors/commom/entity-not-found-error';
 import { Logger } from '../gateways/tools/logger.interface';
+import { Injectable } from '@nestjs/common';
 
 export type GetCustomerByIdRequest = {
   id: string;
@@ -10,6 +11,7 @@ export type GetCustomerByIdRequest = {
 
 export type GetCustomerByIdResponse = Customer;
 
+@Injectable()
 export class GetCustomerByIdUseCase {
   constructor(
     private readonly customerRepo: CustomerRepository,

@@ -32,6 +32,7 @@ import {
   TUpdateCustomerSchema,
   UpdateCustomerSchema,
 } from './schemas/update-customer.schema';
+import { GetCustomerByIdUseCase } from '@/domain/application/use-cases/get-customer-by-id';
 
 @Controller('customers')
 export class CustomerController {
@@ -40,6 +41,7 @@ export class CustomerController {
     private readonly updateCustomerUseCase: UpdateCustomerUseCase,
     private readonly deleteCustomerUseCase: DeleteCustomerUseCase,
     private readonly listCustomersUseCase: ListCustomersUseCase,
+    private readonly getCustomerByIdUseCase: GetCustomerByIdUseCase,
     private readonly logger: Logger,
   ) {}
 
@@ -77,6 +79,34 @@ export class CustomerController {
       this.logger.error(
         CustomerController.name,
         `Error listing customers with query ${JSON.stringify(query, null, 2)}: ${error?.message}`,
+        error?.stack,
+      );
+
+      throw error;
+    }
+  }
+
+  @Get(':id')
+  async getCustomerById(
+    @Param('id') id: string,
+  ): Promise<CustomerHttpResponse> {
+    try {
+      this.logger.log(
+        CustomerController.name,
+        `Getting customer with id ${id}`,
+      );
+
+      const customer = await this.getCustomerByIdUseCase.execute({
+        id,
+      });
+
+      this.logger.log(CustomerController.name, `Customer with id ${id} found`);
+
+      return CustomerPresenter.toHTTP(customer);
+    } catch (error) {
+      this.logger.error(
+        CustomerController.name,
+        `Error getting customer with id ${id}: ${error?.message}`,
         error?.stack,
       );
 
