@@ -1,4 +1,4 @@
-import { Entity } from '@/core/entities/entity';
+import { Entity, Timestamp } from '@/core/entities/entity';
 import { UniqueEntityID } from '@/core/entities/unique-entity-id';
 
 export type ProductProps = {
@@ -8,8 +8,12 @@ export type ProductProps = {
 };
 
 export class Product extends Entity<ProductProps> {
-  public static restore(props: ProductProps, id: UniqueEntityID): Product {
-    return new Product(props, id);
+  public static restore(
+    props: ProductProps,
+    id: UniqueEntityID,
+    timestamp?: Timestamp,
+  ): Product {
+    return new Product(props, id, timestamp);
   }
 
   get title(): string {

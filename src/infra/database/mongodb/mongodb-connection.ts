@@ -29,6 +29,10 @@ async function createIndexes(client: MongoClient, logger: Logger) {
   const customersCollection = db.collection('customers');
 
   await customersCollection.createIndex({ email: 1 }, { unique: true });
+  await customersCollection.createIndex(
+    { 'favoriteProducts._id': 1 },
+    { unique: true, sparse: true },
+  );
 
   logger.log('MongoDBConnection', 'Indexes created 🚀');
 }

@@ -1,9 +1,7 @@
 import { UniqueEntityID } from '@/core/entities/unique-entity-id';
 import { EntityNotFoundError } from '@/core/errors/commom/entity-not-found-error';
 import { UseCase } from '@/core/types/use-case';
-import { CustomerFavoriteProduct } from '@/domain/enterprise/entities/customer-favorite-product';
 import { ProductsServiceGateway } from '../gateways/external/products-service.interface';
-import { CustomerFavoriteProductsRepository } from '../gateways/repositories/customer-favorite-products.repository';
 import { CustomerRepository } from '../gateways/repositories/customer-repository.interface';
 import { Logger } from '../gateways/tools/logger.interface';
 
@@ -21,7 +19,6 @@ export class AddProductToFavorites
   constructor(
     private readonly customerRepository: CustomerRepository,
     private readonly productsServiceGateway: ProductsServiceGateway,
-    private readonly customerFavoriteProductsRepository: CustomerFavoriteProductsRepository,
     private readonly logger: Logger,
   ) {}
 
@@ -36,10 +33,9 @@ export class AddProductToFavorites
       );
 
       const customerEntityId = new UniqueEntityID(customerId);
-      const customerExists =
-        await this.customerRepository.exists(customerEntityId);
+      const customer = await this.customerRepository.findById(customerEntityId);
 
-      if (!customerExists) {
+      if (!customer) {
         throw new EntityNotFoundError('Cliente', customerId);
       }
 
@@ -49,14 +45,9 @@ export class AddProductToFavorites
         throw new EntityNotFoundError('Produto', productId);
       }
 
-      const customerFavoriteProduct = CustomerFavoriteProduct.create({
-        customerId: customerEntityId,
-        product,
-      });
+      customer.favoriteProduct(product);
 
-      await this.customerFavoriteProductsRepository.save(
-        customerFavoriteProduct,
-      );
+      await this.customerRepository.save(customer);
 
       this.logger.log(
         AddProductToFavorites.name,

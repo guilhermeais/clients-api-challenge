@@ -5,7 +5,6 @@ import { makeCustomer } from 'test/mocks/domain/enterprise/entities/customer.moc
 import { makeProduct } from 'test/mocks/domain/enterprise/entities/product.mock';
 import { MockProxy, mock } from 'vitest-mock-extended';
 import { ProductsServiceGateway } from '../gateways/external/products-service.interface';
-import { CustomerFavoriteProductsRepository } from '../gateways/repositories/customer-favorite-products.repository';
 import { CustomerRepository } from '../gateways/repositories/customer-repository.interface';
 import { Logger } from '../gateways/tools/logger.interface';
 import {
@@ -17,7 +16,6 @@ describe(`${AddProductToFavorites.name}`, () => {
   let sut: AddProductToFavorites;
   let customerRepository: MockProxy<CustomerRepository>;
   let productsServiceGateway: MockProxy<ProductsServiceGateway>;
-  let customerFavoriteProductsRepository: MockProxy<CustomerFavoriteProductsRepository>;
   let logger: MockProxy<Logger>;
 
   let defaultProduct: Product;
@@ -26,19 +24,17 @@ describe(`${AddProductToFavorites.name}`, () => {
   beforeEach(() => {
     customerRepository = mock();
     productsServiceGateway = mock();
-    customerFavoriteProductsRepository = mock();
     logger = mock();
 
     defaultProduct = makeProduct();
     defaultCustomer = makeCustomer();
 
-    customerRepository.exists.mockResolvedValue(true);
+    customerRepository.findById.mockResolvedValue(defaultCustomer);
     productsServiceGateway.findById.mockResolvedValue(defaultProduct);
 
     sut = new AddProductToFavorites(
       customerRepository,
       productsServiceGateway,
-      customerFavoriteProductsRepository,
       logger,
     );
   });
@@ -58,16 +54,11 @@ describe(`${AddProductToFavorites.name}`, () => {
 
     await sut.execute(request);
 
-    expect(customerFavoriteProductsRepository.save).toHaveBeenCalledWith(
-      expect.objectContaining({
-        customerId: defaultCustomer.id,
-        product: defaultProduct,
-      }),
-    );
+    expect(customerRepository.save).toHaveBeenCalledWith(defaultCustomer);
   });
 
   it('should throw if the customer does not exists', async () => {
-    customerRepository.exists.mockResolvedValue(false);
+    customerRepository.findById.mockResolvedValue(null);
 
     const request = makeAddProductToFavoritesRequest();
 

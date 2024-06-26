@@ -1,18 +1,16 @@
-import { PaginatedRequest, PaginatedResponse } from '@/core/types/pagination';
-import { UseCase } from '@/core/types/use-case';
-import { CustomerFavoriteProduct } from '@/domain/enterprise/entities/customer-favorite-product';
-import { CustomerFavoriteProductsRepository } from '../gateways/repositories/customer-favorite-products.repository';
-import { CustomerRepository } from '../gateways/repositories/customer-repository.interface';
-import { Logger } from '../gateways/tools/logger.interface';
 import { UniqueEntityID } from '@/core/entities/unique-entity-id';
 import { EntityNotFoundError } from '@/core/errors/commom/entity-not-found-error';
+import { PaginatedRequest, PaginatedResponse } from '@/core/types/pagination';
+import { UseCase } from '@/core/types/use-case';
+import { Product } from '@/domain/enterprise/entities/product';
+import { CustomerRepository } from '../gateways/repositories/customer-repository.interface';
+import { Logger } from '../gateways/tools/logger.interface';
 
 export type GetCustomerFavoriteProductsRequest = PaginatedRequest<{
   customerId: string;
 }>;
 
-export type GetCustomerFavoriteProductsResponse =
-  PaginatedResponse<CustomerFavoriteProduct>;
+export type GetCustomerFavoriteProductsResponse = PaginatedResponse<Product>;
 
 export class GetCustomerFavoriteProductsUseCase
   implements
@@ -23,7 +21,6 @@ export class GetCustomerFavoriteProductsUseCase
 {
   constructor(
     private readonly customerRepository: CustomerRepository,
-    private readonly customerFavoriteProductsRepository: CustomerFavoriteProductsRepository,
     private readonly logger: Logger,
   ) {}
 
@@ -46,7 +43,7 @@ export class GetCustomerFavoriteProductsUseCase
         throw new EntityNotFoundError('Cliente', customerId);
       }
 
-      const response = await this.customerFavoriteProductsRepository.list({
+      const response = await this.customerRepository.listFavoriteProducts({
         ...requestWithoutCustomerId,
         customerId: customerEntityId,
       });

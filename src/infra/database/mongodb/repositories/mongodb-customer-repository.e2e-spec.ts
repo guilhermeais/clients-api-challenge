@@ -2,15 +2,22 @@ import { CustomerRepository } from '@/domain/application/gateways/repositories/c
 import { Email } from '@/domain/enterprise/entities/value-objects/email';
 import { faker } from '@faker-js/faker';
 import { INestApplication } from '@nestjs/common';
-import { MongoServerError } from 'mongodb';
+import { Collection, MongoClient, MongoServerError } from 'mongodb';
 import { makeCustomer } from 'test/mocks/domain/enterprise/entities/customer.mock';
 import { makeFakeApp } from 'test/utils/make-fake-app';
 import { DatabaseModule } from '../../database.module';
-import { MongoDbCustomerRepository } from './mongodb-customer-repository';
+import {
+  CustomerDocument,
+  MongoDbCustomerRepository,
+} from './mongodb-customer-repository';
+import { makeProduct } from 'test/mocks/domain/enterprise/entities/product.mock';
+import { MONGO_DB_CONNECTION } from '../mongodb-connection';
 
 describe(`${MongoDbCustomerRepository.name}`, () => {
   let app: INestApplication;
   let sut: MongoDbCustomerRepository;
+  let connection: MongoClient;
+  let collection: Collection<CustomerDocument>;
 
   beforeAll(async () => {
     const module = await makeFakeApp({
@@ -20,8 +27,15 @@ describe(`${MongoDbCustomerRepository.name}`, () => {
     app = module.createNestApplication();
 
     sut = module.get(CustomerRepository);
+    connection = module.get(MONGO_DB_CONNECTION);
+
+    collection = connection.db().collection('customers');
 
     await app.init();
+  });
+
+  beforeEach(() => {
+    vi.useFakeTimers();
   });
 
   describe('save()', () => {
@@ -62,6 +76,58 @@ describe(`${MongoDbCustomerRepository.name}`, () => {
           message: `E11000 duplicate key error collection: test.customers index: email_1 dup key: { : "${firstCustomer.email.value}" }`,
         }),
       );
+    });
+
+    it('should add new favorite products to the customer', async () => {
+      const customer = makeCustomer();
+
+      await sut.save(customer);
+
+      const product = makeProduct();
+
+      customer.favoriteProduct(product);
+
+      await sut.save(customer);
+
+      const customerDocument = await collection.findOne({
+        _id: customer.id.toValue(),
+      });
+
+      expect(customerDocument.favoriteProducts).toEqual([
+        {
+          _id: product.id.toValue(),
+          title: product.title,
+          price: product.price,
+          image: product.image,
+          createdAt: new Date(),
+        },
+      ]);
+
+      const newProduct = makeProduct();
+      customer.favoriteProduct(newProduct);
+
+      await sut.save(customer);
+
+      const customerDocumentUpdated = await collection.findOne({
+        _id: customer.id.toValue(),
+      });
+
+      expect(customerDocumentUpdated.favoriteProducts).toEqual([
+        {
+          _id: product.id.toValue(),
+          title: product.title,
+          price: product.price,
+          image: product.image,
+          createdAt: new Date(),
+        },
+        {
+          _id: newProduct.id.toValue(),
+          title: newProduct.title,
+          price: newProduct.price,
+          image: newProduct.image,
+          createdAt: new Date(),
+        },
+      ]);
     });
   });
 
@@ -183,6 +249,83 @@ describe(`${MongoDbCustomerRepository.name}`, () => {
       expect(secondPage.items).toEqual(costumers.slice(5, 10));
       expect(secondPage.pages).toEqual(2);
       expect(secondPage.total).toEqual(10);
+    });
+  });
+
+  describe('listFavoriteProducts()', () => {
+    it('should return empty if the customer does not have favorite products', async () => {
+      const customer = makeCustomer();
+
+      await sut.save(customer);
+
+      const result = await sut.listFavoriteProducts({
+        limit: 10,
+        page: 1,
+        customerId: customer.id,
+      });
+
+      expect(result.items).toEqual([]);
+      expect(result.pages).toEqual(0);
+      expect(result.currentPage).toEqual(1);
+      expect(result.total).toEqual(0);
+    });
+
+    it('should paginate the customer favorite products', async () => {
+      vi.useRealTimers();
+      const customer = makeCustomer();
+
+      await sut.save(customer);
+
+      const products = Array.from({ length: 10 }).map((_, i) => {
+        const product = makeProduct({
+          title: `${i}`,
+        });
+
+        return product;
+      });
+
+      customer.favoriteProduct(...products);
+
+      await sut.save(customer);
+
+      const result = await sut.listFavoriteProducts({
+        limit: 5,
+        page: 1,
+        customerId: customer.id,
+      });
+
+      expect(result.items.map((p) => p.id)).toEqual(
+        products.slice(0, 5).map((p) => p.id),
+      );
+      expect(result.pages).toEqual(2);
+      expect(result.currentPage).toEqual(1);
+      expect(result.total).toEqual(10);
+
+      const secondPage = await sut.listFavoriteProducts({
+        limit: 5,
+        page: 2,
+        customerId: customer.id,
+      });
+
+      expect(secondPage.items.map((p) => p.id)).toEqual(
+        products.slice(5, 10).map((p) => p.id),
+      );
+      expect(secondPage.pages).toEqual(2);
+      expect(secondPage.currentPage).toEqual(2);
+      expect(secondPage.total).toEqual(products.length);
+    });
+
+    it('should return empty if the customer does not exists', async () => {
+      const result = await sut.listFavoriteProducts({
+        limit: 10,
+        page: 1,
+        customerId: makeCustomer().id,
+      });
+
+      expect(result.items).toEqual([]);
+      expect(result.pages).toEqual(0);
+      expect(result.currentPage).toEqual(1);
+      expect(result.total).toEqual(0);
     });
   });
 });

@@ -1,33 +1,30 @@
+import { UniqueEntityID } from '@/core/entities/unique-entity-id';
+import { EntityNotFoundError } from '@/core/errors/commom/entity-not-found-error';
+import { faker } from '@faker-js/faker';
 import { MockProxy, mock } from 'vitest-mock-extended';
-import { CustomerFavoriteProductsRepository } from '../gateways/repositories/customer-favorite-products.repository';
 import { CustomerRepository } from '../gateways/repositories/customer-repository.interface';
 import { Logger } from '../gateways/tools/logger.interface';
 import {
   GetCustomerFavoriteProductsRequest,
   GetCustomerFavoriteProductsUseCase,
 } from './get-customer-favorite-products';
-import { faker } from '@faker-js/faker';
-import { EntityNotFoundError } from '@/core/errors/commom/entity-not-found-error';
-import { UniqueEntityID } from '@/core/entities/unique-entity-id';
 
 describe(`${GetCustomerFavoriteProductsUseCase.name}`, () => {
   let sut: GetCustomerFavoriteProductsUseCase;
   let customerRepository: MockProxy<CustomerRepository>;
-  let customerFavoriteProductsRepository: MockProxy<CustomerFavoriteProductsRepository>;
   let logger: MockProxy<Logger>;
 
-  let defaultCustomerFavoriteProductsRepositoryListResponse: Awaited<
-    ReturnType<typeof customerFavoriteProductsRepository.list>
+  let defaultCustomerFavoriteProducts: Awaited<
+    ReturnType<typeof customerRepository.listFavoriteProducts>
   >;
 
   beforeEach(() => {
     customerRepository = mock();
-    customerFavoriteProductsRepository = mock();
     logger = mock();
 
     customerRepository.exists.mockResolvedValue(true);
 
-    defaultCustomerFavoriteProductsRepositoryListResponse = {
+    defaultCustomerFavoriteProducts = {
       currentPage: 1,
       items: [],
       limit: 10,
@@ -35,15 +32,11 @@ describe(`${GetCustomerFavoriteProductsUseCase.name}`, () => {
       total: 0,
     };
 
-    customerFavoriteProductsRepository.list.mockResolvedValue(
-      defaultCustomerFavoriteProductsRepositoryListResponse,
+    customerRepository.listFavoriteProducts.mockResolvedValue(
+      defaultCustomerFavoriteProducts,
     );
 
-    sut = new GetCustomerFavoriteProductsUseCase(
-      customerRepository,
-      customerFavoriteProductsRepository,
-      logger,
-    );
+    sut = new GetCustomerFavoriteProductsUseCase(customerRepository, logger);
   });
 
   function makeGetCustomerFavoriteProductsRequest(
@@ -62,11 +55,9 @@ describe(`${GetCustomerFavoriteProductsUseCase.name}`, () => {
 
     const response = await sut.execute(request);
 
-    expect(response).toEqual(
-      defaultCustomerFavoriteProductsRepositoryListResponse,
-    );
+    expect(response).toEqual(defaultCustomerFavoriteProducts);
 
-    expect(customerFavoriteProductsRepository.list).toHaveBeenCalledWith({
+    expect(customerRepository.listFavoriteProducts).toHaveBeenCalledWith({
       ...request,
       customerId: new UniqueEntityID(request.customerId),
     });

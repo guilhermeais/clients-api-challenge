@@ -3,17 +3,26 @@ import { PaginatedRequest, PaginatedResponse } from '@/core/types/pagination';
 import { CustomerRepository } from '@/domain/application/gateways/repositories/customer-repository.interface';
 import { Logger } from '@/domain/application/gateways/tools/logger.interface';
 import { Customer } from '@/domain/enterprise/entities/customer';
+import { Product } from '@/domain/enterprise/entities/product';
 import { Email } from '@/domain/enterprise/entities/value-objects/email';
 import { Inject, Injectable } from '@nestjs/common';
-import { Collection, MongoClient, ObjectId } from 'mongodb';
+import { Collection, MongoClient } from 'mongodb';
 import { MONGO_DB_CONNECTION } from '../mongodb-connection';
 
+export type ProductDocument = {
+  _id: string;
+  title: string;
+  price: number;
+  image: string;
+};
+
 export type CustomerDocument = {
-  _id: ObjectId;
+  _id: string;
   name: string;
   email: string;
   createdAt: Date;
   updatedAt: Date;
+  favoriteProducts?: ProductDocument[];
 };
 @Injectable()
 export class MongoDbCustomerRepository implements CustomerRepository {
@@ -43,6 +52,18 @@ export class MongoDbCustomerRepository implements CustomerRepository {
             name: customer.name,
             email: customer.email.value,
             createdAt: customer.createdAt,
+            updatedAt: new Date(),
+          },
+          $push: {
+            favoriteProducts: {
+              $each: customer.consumeNewFavoritedProducts().map((product) => ({
+                _id: product.id.toValue(),
+                title: product.title,
+                price: product.price,
+                image: product.image,
+                createdAt: new Date(),
+              })),
+            },
           },
         },
         {
@@ -240,6 +261,15 @@ export class MongoDbCustomerRepository implements CustomerRepository {
           items: CustomerDocument[];
         }>([
           {
+            $project: {
+              _id: 1,
+              name: 1,
+              email: 1,
+              createdAt: 1,
+              updatedAt: 1,
+            },
+          },
+          {
             $match: {
               ...(email && { email: email.value }),
               ...(name && { name: { $regex: name, $options: 'i' } }),
@@ -306,6 +336,109 @@ export class MongoDbCustomerRepository implements CustomerRepository {
       this.logger.error(
         MongoDbCustomerRepository.name,
         `Error listing customers with ${JSON.stringify(request, null, 2)}: ${error.message}`,
+        error.stack,
+      );
+
+      throw error;
+    }
+  }
+
+  async listFavoriteProducts(
+    request: PaginatedRequest<{ customerId: UniqueEntityID }>,
+  ): Promise<PaginatedResponse<Product>> {
+    try {
+      this.logger.log(
+        MongoDbCustomerRepository.name,
+        `Listing favorite products of customer ${request.customerId.toString()}...`,
+      );
+
+      const { customerId, limit, page } = request;
+
+      const [result] = await this.#customerCollection
+        .aggregate<{
+          metadata: { total: number };
+          items: ProductDocument[];
+        }>([
+          {
+            $match: {
+              _id: customerId.toValue(),
+            },
+          },
+          {
+            $project: {
+              favoriteProducts: 1,
+            },
+          },
+          {
+            $unwind: '$favoriteProducts',
+          },
+          {
+            $project: {
+              _id: '$favoriteProducts._id',
+              title: '$favoriteProducts.title',
+              price: '$favoriteProducts.price',
+              image: '$favoriteProducts.image',
+              createdAt: '$favoriteProducts.createdAt',
+            },
+          },
+          { $sort: { title: 1 } },
+          {
+            $facet: {
+              metadata: [
+                {
+                  $count: 'total',
+                },
+              ],
+              items: [
+                {
+                  $skip: limit * (page - 1),
+                },
+                {
+                  $limit: limit,
+                },
+              ],
+            },
+          },
+          {
+            $project: {
+              metadata: {
+                $arrayElemAt: ['$metadata', 0],
+              },
+              items: 1,
+            },
+          },
+        ])
+        .toArray();
+
+      const { metadata, items } = result;
+
+      this.logger.log(
+        MongoDbCustomerRepository.name,
+        `Favorite products of customer ${request.customerId.toString()} listed a total of ${metadata?.total} favorite products successfully`,
+      );
+
+      const pages = Math.ceil((metadata?.total || 0) / limit);
+
+      return {
+        currentPage: page,
+        items: items.map((item) =>
+          Product.restore(
+            {
+              title: item.title,
+              price: item.price,
+              image: item.image,
+            },
+            new UniqueEntityID(item._id),
+          ),
+        ),
+        limit,
+        total: metadata?.total || 0,
+        pages,
+      };
+    } catch (error) {
+      this.logger.error(
+        MongoDbCustomerRepository.name,
+        `Error listing favorite products of customer ${request.customerId.toString()}: ${error.message}`,
         error.stack,
       );
 

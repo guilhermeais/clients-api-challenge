@@ -1,6 +1,8 @@
 import { Entity, Timestamp } from '@/core/entities/entity';
 import { UniqueEntityID } from '@/core/entities/unique-entity-id';
 import { Email } from './value-objects/email';
+import { Product } from './product';
+import { ProductAlreadyFavoritedError } from './errors/product-already-favorited-error';
 
 export type CustomerProps = {
   name: string;
@@ -8,6 +10,29 @@ export type CustomerProps = {
 };
 
 export class Customer extends Entity<CustomerProps> {
+  #newFavoritedProducts: Product[] = [];
+
+  favoriteProduct(...products: Product[]) {
+    products.forEach((product) => {
+      const productAlreadyFavorited = this.#newFavoritedProducts.some(
+        (favoritedProduct) => favoritedProduct.id.equals(product.id),
+      );
+
+      if (productAlreadyFavorited) {
+        throw new ProductAlreadyFavoritedError(product);
+      }
+
+      this.#newFavoritedProducts.push(product);
+    });
+  }
+
+  consumeNewFavoritedProducts() {
+    const favoritedProducts = this.#newFavoritedProducts;
+    this.#newFavoritedProducts = [];
+
+    return favoritedProducts;
+  }
+
   get name(): string {
     return this.props.name;
   }
