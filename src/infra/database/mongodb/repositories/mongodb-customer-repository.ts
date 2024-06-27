@@ -3,7 +3,6 @@ import { PaginatedRequest, PaginatedResponse } from '@/core/types/pagination';
 import { CustomerRepository } from '@/domain/application/gateways/repositories/customer-repository.interface';
 import { Logger } from '@/domain/application/gateways/tools/logger.interface';
 import { Customer } from '@/domain/enterprise/entities/customer';
-import { ProductAlreadyFavoritedError } from '@/domain/enterprise/entities/errors/product-already-favorited-error';
 import { Product } from '@/domain/enterprise/entities/product';
 import { Email } from '@/domain/enterprise/entities/value-objects/email';
 import { Inject, Injectable } from '@nestjs/common';
@@ -43,14 +42,6 @@ export class MongoDbCustomerRepository implements CustomerRepository {
         `Saving customer ${customer.name} - ${customer.email.value}...`,
       );
 
-      const newProducts = customer.consumeNewFavoritedProducts();
-
-      for (const product of newProducts) {
-        if (await this.productIsAlreadyFavorited(customer.id, product.id)) {
-          throw new ProductAlreadyFavoritedError(product);
-        }
-      }
-
       await this.#customerCollection.updateOne(
         {
           _id: customer.id.toValue(),
@@ -65,7 +56,7 @@ export class MongoDbCustomerRepository implements CustomerRepository {
           },
           $addToSet: {
             favoriteProducts: {
-              $each: newProducts.map((product) => ({
+              $each: customer.consumeNewFavoritedProducts().map((product) => ({
                 _id: product.id.toValue(),
                 title: product.title,
                 price: product.price,
@@ -93,25 +84,6 @@ export class MongoDbCustomerRepository implements CustomerRepository {
 
       throw error;
     }
-  }
-
-  private async productIsAlreadyFavorited(
-    customerId: UniqueEntityID,
-    productId: UniqueEntityID,
-  ): Promise<boolean> {
-    const customer = await this.#customerCollection.findOne(
-      {
-        _id: customerId.toValue(),
-        'favoriteProducts._id': productId.toValue(),
-      },
-      {
-        projection: {
-          _id: 0,
-        },
-      },
-    );
-
-    return !!customer;
   }
 
   async findById(id: UniqueEntityID): Promise<Customer> {
