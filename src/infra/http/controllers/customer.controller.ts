@@ -1,6 +1,8 @@
 import { Logger } from '@/domain/application/gateways/tools/logger.interface';
+import { AddProductToFavoritesUseCase } from '@/domain/application/use-cases/add-product-to-favorites';
 import { CreateCustomerUseCase } from '@/domain/application/use-cases/create-customer';
 import { DeleteCustomerUseCase } from '@/domain/application/use-cases/delete-customer';
+import { GetCustomerByIdUseCase } from '@/domain/application/use-cases/get-customer-by-id';
 import { ListCustomersUseCase } from '@/domain/application/use-cases/list-customers';
 import { UpdateCustomerUseCase } from '@/domain/application/use-cases/update-customer';
 import {
@@ -14,6 +16,7 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
+import { z } from 'zod';
 import { ZodValidationPipe } from '../pipes/zod-validation.pipe';
 import {
   CustomerHttpResponse,
@@ -32,7 +35,6 @@ import {
   TUpdateCustomerSchema,
   UpdateCustomerSchema,
 } from './schemas/update-customer.schema';
-import { GetCustomerByIdUseCase } from '@/domain/application/use-cases/get-customer-by-id';
 
 @Controller('customers')
 export class CustomerController {
@@ -42,6 +44,7 @@ export class CustomerController {
     private readonly deleteCustomerUseCase: DeleteCustomerUseCase,
     private readonly listCustomersUseCase: ListCustomersUseCase,
     private readonly getCustomerByIdUseCase: GetCustomerByIdUseCase,
+    private readonly addProductToFavoritesUseCase: AddProductToFavoritesUseCase,
     private readonly logger: Logger,
   ) {}
 
@@ -204,6 +207,46 @@ export class CustomerController {
       this.logger.error(
         CustomerController.name,
         `Error deleting customer with id ${id}: ${error?.message}`,
+        error?.stack,
+      );
+
+      throw error;
+    }
+  }
+
+  @Post(':id/favorites')
+  @HttpCode(204)
+  async addProductToFavorites(
+    @Param('id') id: string,
+    @Body(
+      'productId',
+      new ZodValidationPipe(
+        z.string().uuid({
+          message: 'ID do produto deve ser um UUID.',
+        }),
+      ),
+    )
+    productId: string,
+  ): Promise<void> {
+    try {
+      this.logger.log(
+        CustomerController.name,
+        `Adding product with id ${productId} to customer with id ${id}`,
+      );
+
+      await this.addProductToFavoritesUseCase.execute({
+        customerId: id,
+        productId,
+      });
+
+      this.logger.log(
+        CustomerController.name,
+        `Product with id ${productId} added to customer with id ${id}`,
+      );
+    } catch (error) {
+      this.logger.error(
+        CustomerController.name,
+        `Error adding product with id ${productId} to customer with id ${id}: ${error?.message}`,
         error?.stack,
       );
 

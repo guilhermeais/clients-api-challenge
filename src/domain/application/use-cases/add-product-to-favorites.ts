@@ -1,6 +1,7 @@
 import { UniqueEntityID } from '@/core/entities/unique-entity-id';
 import { EntityNotFoundError } from '@/core/errors/commom/entity-not-found-error';
 import { UseCase } from '@/core/types/use-case';
+import { Injectable } from '@nestjs/common';
 import { ProductsServiceGateway } from '../gateways/external/products-service.interface';
 import { CustomerRepository } from '../gateways/repositories/customer-repository.interface';
 import { Logger } from '../gateways/tools/logger.interface';
@@ -12,7 +13,8 @@ export type AddProductToFavoritesRequest = {
 
 export type AddProductToFavoritesResponse = void;
 
-export class AddProductToFavorites
+@Injectable()
+export class AddProductToFavoritesUseCase
   implements
     UseCase<AddProductToFavoritesRequest, AddProductToFavoritesResponse>
 {
@@ -28,7 +30,7 @@ export class AddProductToFavorites
     const { customerId, productId } = request;
     try {
       this.logger.log(
-        AddProductToFavorites.name,
+        AddProductToFavoritesUseCase.name,
         `Adding product ${productId} to customer ${customerId} favorites`,
       );
 
@@ -50,12 +52,12 @@ export class AddProductToFavorites
       await this.customerRepository.save(customer);
 
       this.logger.log(
-        AddProductToFavorites.name,
+        AddProductToFavoritesUseCase.name,
         `Product ${productId} added to customer ${customerId} favorites`,
       );
     } catch (error) {
       this.logger.error(
-        AddProductToFavorites.name,
+        AddProductToFavoritesUseCase.name,
         `Error adding product ${productId} to customer ${customerId} favorites: ${error.message}`,
         error.stack,
       );

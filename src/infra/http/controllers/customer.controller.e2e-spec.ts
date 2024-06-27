@@ -11,10 +11,14 @@ import { CustomerController } from './customer.controller';
 import { CustomerHttpResponse } from './presenters/customer.presenter';
 import { TCreateCustomerSchema } from './schemas/create-customer.schema';
 import { TListCustomersResponse } from './schemas/list-customers.schema';
+import { ProductsServiceGateway } from '@/domain/application/gateways/external/products-service.interface';
+import { FakeProductsServiceGateway } from 'test/mocks/domain/application/fateways/external/products-service.mock';
+import { makeProduct } from 'test/mocks/domain/enterprise/entities/product.mock';
 
 describe(`${CustomerController.name} E2E`, () => {
   let app: INestApplication;
   let customerRepository: CustomerRepository;
+  let productsServiceGateway: FakeProductsServiceGateway;
 
   beforeAll(async () => {
     const moduleRef = await makeFakeApp({
@@ -26,6 +30,7 @@ describe(`${CustomerController.name} E2E`, () => {
     app.useGlobalFilters(new DefaultExceptionFilter());
 
     customerRepository = moduleRef.get(CustomerRepository);
+    productsServiceGateway = moduleRef.get(ProductsServiceGateway);
 
     await app.init();
   });
@@ -313,6 +318,85 @@ describe(`${CustomerController.name} E2E`, () => {
         message: ['Recurso não encontrado!'],
         statusCode: 404,
       });
+    });
+  });
+
+  describe('[POST] /customers/:id/favorites', () => {
+    it('should favorite an product', async () => {
+      const product = makeProduct();
+      productsServiceGateway.products.set(product.id.toString(), product);
+
+      const customer = makeCustomer();
+      await customerRepository.save(customer);
+
+      const response = await request(app.getHttpServer())
+        .post(`/customers/${customer.id.toString()}/favorites`)
+        .send({
+          productId: product.id.toString(),
+        });
+
+      expect(response.status).toBe(204);
+
+      const { items: customerFavoriteProducts } =
+        await customerRepository.listFavoriteProducts({
+          customerId: customer.id,
+          limit: 1,
+          page: 1,
+        });
+
+      expect(customerFavoriteProducts).toHaveLength(1);
+      expect(customerFavoriteProducts[0].id).toEqual(product.id);
+      expect(customerFavoriteProducts[0].title).toBe(product.title);
+      expect(customerFavoriteProducts[0].image).toBe(product.image);
+      expect(customerFavoriteProducts[0].price).toBe(product.price);
+    });
+
+    it('should return 404 if try to favorite an product that does not exists', async () => {
+      const customer = makeCustomer();
+      await customerRepository.save(customer);
+      const productId = new UniqueEntityID().toString();
+
+      const response = await request(app.getHttpServer())
+        .post(`/customers/${customer.id.toString()}/favorites`)
+        .send({
+          productId,
+        });
+
+      expect(response.status).toBe(404);
+      expect(response.body).toEqual({
+        details: `A entidade Produto - ${productId.toString()} não foi encontrada`,
+        error: 'EntityNotFoundError',
+        message: ['Recurso não encontrado!'],
+        statusCode: 404,
+      });
+    });
+
+    it('should not favorite the same product twice', async () => {
+      const product = makeProduct();
+      productsServiceGateway.products.set(product.id.toString(), product);
+
+      const customer = makeCustomer();
+      await customerRepository.save(customer);
+
+      await Promise.all(
+        Array.from({ length: 50 }, () =>
+          request(app.getHttpServer())
+            .post(`/customers/${customer.id.toString()}/favorites`)
+            .send({
+              productId: product.id.toString(),
+            }),
+        ),
+      );
+
+      const { items: customerFavoriteProducts } =
+        await customerRepository.listFavoriteProducts({
+          customerId: customer.id,
+          limit: 1000,
+          page: 1,
+        });
+
+      expect(customerFavoriteProducts).toHaveLength(1);
+      expect(customerFavoriteProducts[0].id).toEqual(product.id);
     });
   });
 });

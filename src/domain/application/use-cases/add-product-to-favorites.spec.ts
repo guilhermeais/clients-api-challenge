@@ -8,12 +8,12 @@ import { ProductsServiceGateway } from '../gateways/external/products-service.in
 import { CustomerRepository } from '../gateways/repositories/customer-repository.interface';
 import { Logger } from '../gateways/tools/logger.interface';
 import {
-  AddProductToFavorites,
+  AddProductToFavoritesUseCase,
   AddProductToFavoritesRequest,
 } from './add-product-to-favorites';
 
-describe(`${AddProductToFavorites.name}`, () => {
-  let sut: AddProductToFavorites;
+describe(`${AddProductToFavoritesUseCase.name}`, () => {
+  let sut: AddProductToFavoritesUseCase;
   let customerRepository: MockProxy<CustomerRepository>;
   let productsServiceGateway: MockProxy<ProductsServiceGateway>;
   let logger: MockProxy<Logger>;
@@ -32,7 +32,7 @@ describe(`${AddProductToFavorites.name}`, () => {
     customerRepository.findById.mockResolvedValue(defaultCustomer);
     productsServiceGateway.findById.mockResolvedValue(defaultProduct);
 
-    sut = new AddProductToFavorites(
+    sut = new AddProductToFavoritesUseCase(
       customerRepository,
       productsServiceGateway,
       logger,
