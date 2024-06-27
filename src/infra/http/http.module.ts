@@ -2,6 +2,7 @@ import { AddProductToFavoritesUseCase } from '@/domain/application/use-cases/add
 import { CreateCustomerUseCase } from '@/domain/application/use-cases/create-customer';
 import { DeleteCustomerUseCase } from '@/domain/application/use-cases/delete-customer';
 import { GetCustomerByIdUseCase } from '@/domain/application/use-cases/get-customer-by-id';
+import { ListCustomerFavoriteProductsUseCase } from '@/domain/application/use-cases/list-customer-favorite-products';
 import { ListCustomersUseCase } from '@/domain/application/use-cases/list-customers';
 import { UpdateCustomerUseCase } from '@/domain/application/use-cases/update-customer';
 import { Module } from '@nestjs/common';
@@ -20,6 +21,7 @@ import { CustomerController } from './controllers/customer.controller';
     ListCustomersUseCase,
     GetCustomerByIdUseCase,
     AddProductToFavoritesUseCase,
+    ListCustomerFavoriteProductsUseCase,
   ],
 })
 export class HttpModule {}

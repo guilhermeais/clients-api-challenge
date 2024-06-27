@@ -3,6 +3,7 @@ import { AddProductToFavoritesUseCase } from '@/domain/application/use-cases/add
 import { CreateCustomerUseCase } from '@/domain/application/use-cases/create-customer';
 import { DeleteCustomerUseCase } from '@/domain/application/use-cases/delete-customer';
 import { GetCustomerByIdUseCase } from '@/domain/application/use-cases/get-customer-by-id';
+import { ListCustomerFavoriteProductsUseCase } from '@/domain/application/use-cases/list-customer-favorite-products';
 import { ListCustomersUseCase } from '@/domain/application/use-cases/list-customers';
 import { UpdateCustomerUseCase } from '@/domain/application/use-cases/update-customer';
 import {
@@ -22,10 +23,16 @@ import {
   CustomerHttpResponse,
   CustomerPresenter,
 } from './presenters/customer.presenter';
+import { ProductPresenter } from './presenters/product.presenter';
 import {
   CreateCustomerSchema,
   TCreateCustomerSchema,
 } from './schemas/create-customer.schema';
+import {
+  ListCustomerFavoriteProductsSchema,
+  TListCustomerFavoriteProductsResponse,
+  TListCustomerFavoriteProductsSchema,
+} from './schemas/list-customer-favorite-products.schema';
 import {
   ListCustomersSchema,
   TListCustomersResponse,
@@ -45,6 +52,7 @@ export class CustomerController {
     private readonly listCustomersUseCase: ListCustomersUseCase,
     private readonly getCustomerByIdUseCase: GetCustomerByIdUseCase,
     private readonly addProductToFavoritesUseCase: AddProductToFavoritesUseCase,
+    private readonly listCustomerFavoriteProductsUseCase: ListCustomerFavoriteProductsUseCase,
     private readonly logger: Logger,
   ) {}
 
@@ -247,6 +255,63 @@ export class CustomerController {
       this.logger.error(
         CustomerController.name,
         `Error adding product with id ${productId} to customer with id ${id}: ${error?.message}`,
+        error?.stack,
+      );
+
+      throw error;
+    }
+  }
+
+  @Get(':id/favorites')
+  async listCustomerFavoriteProducts(
+    @Param(
+      'id',
+      new ZodValidationPipe(
+        z.string().uuid({
+          message: 'ID do cliente deve ser um UUID.',
+        }),
+      ),
+    )
+    customerId: string,
+    @Query(new ZodValidationPipe(ListCustomerFavoriteProductsSchema))
+    query: TListCustomerFavoriteProductsSchema,
+  ): Promise<TListCustomerFavoriteProductsResponse> {
+    try {
+      this.logger.log(
+        CustomerController.name,
+        `Listing favorite products for customer with id ${customerId} with query ${JSON.stringify(
+          query,
+          null,
+          2,
+        )}`,
+      );
+
+      const response = await this.listCustomerFavoriteProductsUseCase.execute({
+        customerId,
+        limit: query.limit,
+        page: query.page,
+      });
+
+      this.logger.log(
+        CustomerController.name,
+        `Found a total of ${response.total} favorite products for customer with id ${customerId}`,
+      );
+
+      return {
+        items: response.items.map(ProductPresenter.toHTTP),
+        total: response.total,
+        limit: response.limit,
+        currentPage: response.currentPage,
+        pages: response.pages,
+      };
+    } catch (error) {
+      this.logger.error(
+        CustomerController.name,
+        `Error listing favorite products for customer with id ${customerId} with query ${JSON.stringify(
+          query,
+          null,
+          2,
+        )}: ${error?.message}`,
         error?.stack,
       );
 

@@ -1,19 +1,19 @@
 import { UniqueEntityID } from '@/core/entities/unique-entity-id';
+import { ProductsServiceGateway } from '@/domain/application/gateways/external/products-service.interface';
 import { CustomerRepository } from '@/domain/application/gateways/repositories/customer-repository.interface';
 import { DatabaseModule } from '@/infra/database/database.module';
 import { faker } from '@faker-js/faker';
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
+import { FakeProductsServiceGateway } from 'test/mocks/domain/application/fateways/external/products-service.mock';
 import { makeCustomer } from 'test/mocks/domain/enterprise/entities/customer.mock';
+import { makeProduct } from 'test/mocks/domain/enterprise/entities/product.mock';
 import { makeFakeApp } from 'test/utils/make-fake-app';
 import { DefaultExceptionFilter } from '../filters/default-exception-filter.filter';
 import { CustomerController } from './customer.controller';
 import { CustomerHttpResponse } from './presenters/customer.presenter';
 import { TCreateCustomerSchema } from './schemas/create-customer.schema';
 import { TListCustomersResponse } from './schemas/list-customers.schema';
-import { ProductsServiceGateway } from '@/domain/application/gateways/external/products-service.interface';
-import { FakeProductsServiceGateway } from 'test/mocks/domain/application/fateways/external/products-service.mock';
-import { makeProduct } from 'test/mocks/domain/enterprise/entities/product.mock';
 
 describe(`${CustomerController.name} E2E`, () => {
   let app: INestApplication;
@@ -397,6 +397,93 @@ describe(`${CustomerController.name} E2E`, () => {
 
       expect(customerFavoriteProducts).toHaveLength(1);
       expect(customerFavoriteProducts[0].id).toEqual(product.id);
+    });
+  });
+
+  describe('[GET] /customers/:id/favorites', () => {
+    it('should get empty list if the customer does not have favorite products', async () => {
+      const customer = makeCustomer();
+      await customerRepository.save(customer);
+
+      const response = await request(app.getHttpServer()).get(
+        `/customers/${customer.id.toString()}/favorites`,
+      );
+
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual({
+        items: [],
+        total: 0,
+        limit: 10,
+        pages: 0,
+        currentPage: 1,
+      });
+    });
+
+    it('should get customer favorite products paginated', async () => {
+      const customer = makeCustomer();
+      await customerRepository.save(customer);
+
+      const products = Array.from({ length: 10 }, (_, i) => {
+        const product = makeProduct({
+          title: i.toString(),
+        });
+        productsServiceGateway.products.set(product.id.toString(), product);
+
+        return product;
+      });
+
+      await Promise.all(
+        products.map(
+          async (product) =>
+            await request(app.getHttpServer())
+              .post(`/customers/${customer.id.toString()}/favorites`)
+              .send({
+                productId: product.id.toString(),
+              }),
+        ),
+      );
+
+      const response = await request(app.getHttpServer()).get(
+        `/customers/${customer.id.toString()}/favorites?limit=5`,
+      );
+
+      expect(response.status).toBe(200);
+      const responseBody = response.body as TListCustomersResponse;
+
+      expect(responseBody.items).toHaveLength(5);
+      expect(responseBody.items.map((p) => p.id)).toEqual(
+        products.slice(0, 5).map((p) => p.id.toString()),
+      );
+      expect(responseBody.total).toBe(10);
+      expect(responseBody.pages).toBe(2);
+      expect(responseBody.currentPage).toBe(1);
+
+      const secondPage = await request(app.getHttpServer()).get(
+        `/customers/${customer.id.toString()}/favorites?page=2&limit=5`,
+      );
+
+      expect(secondPage.status).toBe(200);
+      const secondPageBody = secondPage.body as TListCustomersResponse;
+
+      expect(secondPageBody.items).toHaveLength(5);
+      expect(secondPageBody.total).toBe(10);
+      expect(secondPageBody.pages).toBe(2);
+      expect(secondPageBody.currentPage).toBe(2);
+    });
+
+    it('should get 404 if the customer does not exists', async () => {
+      const id = new UniqueEntityID().toString();
+      const response = await request(app.getHttpServer()).get(
+        `/customers/${id}/favorites`,
+      );
+
+      expect(response.status).toBe(404);
+      expect(response.body).toEqual({
+        details: `A entidade Cliente - ${id} não foi encontrada`,
+        error: 'EntityNotFoundError',
+        message: ['Recurso não encontrado!'],
+        statusCode: 404,
+      });
     });
   });
 });
