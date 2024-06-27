@@ -19,10 +19,7 @@ export class Customer extends Entity<CustomerProps> {
       );
 
       if (productAlreadyFavorited) {
-        throw new ProductAlreadyFavoritedError({
-          id: product.id.toString(),
-          title: product.title,
-        });
+        throw new ProductAlreadyFavoritedError(product);
       }
 
       this.#newFavoritedProducts.push(product);

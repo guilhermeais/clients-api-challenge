@@ -5,12 +5,12 @@ import { MockProxy, mock } from 'vitest-mock-extended';
 import { CustomerRepository } from '../gateways/repositories/customer-repository.interface';
 import { Logger } from '../gateways/tools/logger.interface';
 import {
-  GetCustomerFavoriteProductsRequest,
-  GetCustomerFavoriteProductsUseCase,
-} from './get-customer-favorite-products';
+  ListCustomerFavoriteProductsRequest,
+  ListCustomerFavoriteProductsUseCase,
+} from './list-customer-favorite-products';
 
-describe(`${GetCustomerFavoriteProductsUseCase.name}`, () => {
-  let sut: GetCustomerFavoriteProductsUseCase;
+describe(`${ListCustomerFavoriteProductsUseCase.name}`, () => {
+  let sut: ListCustomerFavoriteProductsUseCase;
   let customerRepository: MockProxy<CustomerRepository>;
   let logger: MockProxy<Logger>;
 
@@ -36,12 +36,12 @@ describe(`${GetCustomerFavoriteProductsUseCase.name}`, () => {
       defaultCustomerFavoriteProducts,
     );
 
-    sut = new GetCustomerFavoriteProductsUseCase(customerRepository, logger);
+    sut = new ListCustomerFavoriteProductsUseCase(customerRepository, logger);
   });
 
-  function makeGetCustomerFavoriteProductsRequest(
-    modifications?: Partial<GetCustomerFavoriteProductsRequest>,
-  ): GetCustomerFavoriteProductsRequest {
+  function makeListCustomerFavoriteProductsRequest(
+    modifications?: Partial<ListCustomerFavoriteProductsRequest>,
+  ): ListCustomerFavoriteProductsRequest {
     return {
       customerId: faker.string.uuid(),
       limit: 10,
@@ -51,7 +51,7 @@ describe(`${GetCustomerFavoriteProductsUseCase.name}`, () => {
   }
 
   it('should return empty list if the customer does not have favorite products', async () => {
-    const request = makeGetCustomerFavoriteProductsRequest();
+    const request = makeListCustomerFavoriteProductsRequest();
 
     const response = await sut.execute(request);
 
@@ -66,7 +66,7 @@ describe(`${GetCustomerFavoriteProductsUseCase.name}`, () => {
   it('should throw if the customer does not exists', async () => {
     customerRepository.exists.mockResolvedValue(false);
 
-    const request = makeGetCustomerFavoriteProductsRequest();
+    const request = makeListCustomerFavoriteProductsRequest();
 
     await expect(sut.execute(request)).rejects.toThrowError(
       new EntityNotFoundError('Cliente', request.customerId),
