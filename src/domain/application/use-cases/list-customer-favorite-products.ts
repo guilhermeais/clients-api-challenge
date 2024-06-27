@@ -3,20 +3,22 @@ import { EntityNotFoundError } from '@/core/errors/commom/entity-not-found-error
 import { PaginatedRequest, PaginatedResponse } from '@/core/types/pagination';
 import { UseCase } from '@/core/types/use-case';
 import { Product } from '@/domain/enterprise/entities/product';
+import { Injectable } from '@nestjs/common';
 import { CustomerRepository } from '../gateways/repositories/customer-repository.interface';
 import { Logger } from '../gateways/tools/logger.interface';
 
-export type GetCustomerFavoriteProductsRequest = PaginatedRequest<{
+export type ListCustomerFavoriteProductsRequest = PaginatedRequest<{
   customerId: string;
 }>;
 
-export type GetCustomerFavoriteProductsResponse = PaginatedResponse<Product>;
+export type ListCustomerFavoriteProductsResponse = PaginatedResponse<Product>;
 
-export class GetCustomerFavoriteProductsUseCase
+@Injectable()
+export class ListCustomerFavoriteProductsUseCase
   implements
     UseCase<
-      GetCustomerFavoriteProductsRequest,
-      GetCustomerFavoriteProductsResponse
+      ListCustomerFavoriteProductsRequest,
+      ListCustomerFavoriteProductsResponse
     >
 {
   constructor(
@@ -25,12 +27,12 @@ export class GetCustomerFavoriteProductsUseCase
   ) {}
 
   async execute(
-    request: GetCustomerFavoriteProductsRequest,
-  ): Promise<GetCustomerFavoriteProductsResponse> {
+    request: ListCustomerFavoriteProductsRequest,
+  ): Promise<ListCustomerFavoriteProductsResponse> {
     const { customerId, ...requestWithoutCustomerId } = request;
     try {
       this.logger.log(
-        GetCustomerFavoriteProductsUseCase.name,
+        ListCustomerFavoriteProductsUseCase.name,
         `Getting customer favorite products for customer ${customerId}`,
       );
 
@@ -49,14 +51,14 @@ export class GetCustomerFavoriteProductsUseCase
       });
 
       this.logger.log(
-        GetCustomerFavoriteProductsUseCase.name,
+        ListCustomerFavoriteProductsUseCase.name,
         `Found ${response.total} favorite products for customer ${customerId}`,
       );
 
       return response;
     } catch (error) {
       this.logger.error(
-        GetCustomerFavoriteProductsUseCase.name,
+        ListCustomerFavoriteProductsUseCase.name,
         `Failed to get customer favorite products for customer ${customerId}: ${error.message}`,
         error.stack,
       );
