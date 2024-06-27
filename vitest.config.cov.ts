@@ -8,7 +8,15 @@ export default mergeConfig(
       coverage: {
         enabled: true,
         provider: 'v8',
-        exclude: ['**/**/*.module.ts', '*.interface.ts', 'src/core/types/**'],
+        exclude: [
+          '**/**/*.module.ts',
+          '*.interface.ts',
+          'src/core/types/**',
+          'src/infra/http/controllers/schemas/**',
+          '**/errors/**',
+          'src/infra/main.ts',
+        ],
+        include: ['src/**/*.ts'],
         reporter: ['text', 'json-summary', 'json'],
         reportOnFailure: true,
       },
