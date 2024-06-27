@@ -1,0 +1,53 @@
+@baseUrl = http://localhost:3000
+@defaultCustomerId = 01905990-3225-7ede-b556-35777adfa837
+
+# @name cria_cliente
+POST {{baseUrl}}/customers
+Content-Type: application/json
+
+{
+    "name": "Guilherme Teixeira Ais",
+    "email": "guilhermeteixeiraais@gmail.com"
+}
+
+###
+
+# @name lista_clientes
+GET {{baseUrl}}/customers?page=1&limit=10
+Content-Type: application/json
+
+###
+
+# @name atualiza_cliente
+PATCH {{baseUrl}}/customers/{{defaultCustomerId}}
+Content-Type: application/json
+
+{
+    "name": "Guilherme Teixeira Ais Atualizado"
+}
+
+###
+
+# @name busca_cliente
+GET {{baseUrl}}/customers/{{defaultCustomerId}}
+Content-Type: application/json
+
+###
+
+# @name deleta_cliente
+DELETE {{baseUrl}}/customers/{{defaultCustomerId}}
+
+###
+
+# @name busca_produtos_favoritados
+GET {{baseUrl}}/customers/{{defaultCustomerId}}/favorites
+
+###
+
+# @name favorita_produto
+POST {{baseUrl}}/customers/{{defaultCustomerId}}/favorites
+Content-Type: application/json
+
+{
+    "productId": "1bf0f365-fbdd-4e21-9786-da459d78dd1f"
+}
