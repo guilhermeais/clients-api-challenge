@@ -1,9 +1,10 @@
 import { Logger } from '@/domain/application/gateways/tools/logger.interface';
-import { HttpStatus } from '@nestjs/common';
+import { HttpStatus, Injectable } from '@nestjs/common';
 import axios, { isAxiosError } from 'axios';
 import { ExternalApiError } from '../errors/external-api-error';
 import { GetOptions, HttpClient, HttpResponse } from '../http-client.interface';
 
+@Injectable()
 export class AxiosHttpClient implements HttpClient {
   constructor(private readonly logger: Logger) {}
 
@@ -48,7 +49,7 @@ export class AxiosHttpClient implements HttpClient {
 
       this.logger.error(
         AxiosHttpClient.name,
-        `Error on GET ${url.toString()}: ${error.message}`,
+        `Error on GET ${url.toString()}: ${error?.message}`,
         error.stack,
       );
 

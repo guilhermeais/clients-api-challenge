@@ -42,6 +42,15 @@ export class MongoDbCustomerRepository implements CustomerRepository {
         `Saving customer ${customer.name} - ${customer.email.value}...`,
       );
 
+      const favoriteProducts = customer
+        .consumeNewFavoritedProducts()
+        .map((product) => ({
+          _id: product.id.toValue(),
+          title: product.title,
+          price: product.price,
+          image: product.image,
+        }));
+
       await this.#customerCollection.updateOne(
         {
           _id: customer.id.toValue(),
@@ -56,13 +65,7 @@ export class MongoDbCustomerRepository implements CustomerRepository {
           },
           $addToSet: {
             favoriteProducts: {
-              $each: customer.consumeNewFavoritedProducts().map((product) => ({
-                _id: product.id.toValue(),
-                title: product.title,
-                price: product.price,
-                image: product.image,
-                createdAt: product.createdAt,
-              })),
+              $each: favoriteProducts,
             },
           },
         },

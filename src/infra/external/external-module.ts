@@ -4,9 +4,10 @@ import { HttpClient } from './http-client.interface';
 import { AxiosHttpClient } from './http-client/axios-http-client';
 import { LuizaLabsProductsService } from './products-service/luizalabs-products-service';
 import { EnvModule } from '../env/env.module';
+import { ToolsModule } from '../tools/tools.module';
 
 @Module({
-  imports: [EnvModule],
+  imports: [EnvModule, ToolsModule],
   providers: [
     {
       provide: HttpClient,

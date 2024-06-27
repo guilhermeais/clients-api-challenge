@@ -5,6 +5,7 @@ import { Product } from '@/domain/enterprise/entities/product';
 import { EnvService } from '@/infra/env/env.service';
 import { HttpClient } from '../http-client.interface';
 import { ExternalApiError } from '../errors/external-api-error';
+import { Injectable } from '@nestjs/common';
 
 export type LuizaLabsProduct = {
   price: number;
@@ -14,6 +15,7 @@ export type LuizaLabsProduct = {
   title: string;
 };
 
+@Injectable()
 export class LuizaLabsProductsService implements ProductsServiceGateway {
   constructor(
     private readonly logger: Logger,
@@ -24,7 +26,7 @@ export class LuizaLabsProductsService implements ProductsServiceGateway {
   async findById(id: string): Promise<Product> {
     try {
       const baseUrl = this.env.get('PRODUCTS_SERVICE_URL');
-      const url = new URL(`${baseUrl}/product/${id}`);
+      const url = new URL(`${baseUrl}/product/${id}/`);
 
       this.logger.log(
         LuizaLabsProductsService.name,
@@ -50,8 +52,8 @@ export class LuizaLabsProductsService implements ProductsServiceGateway {
     } catch (error) {
       this.logger.error(
         LuizaLabsProductsService.name,
-        `Error while trying to find product with id ${id}: ${error.message}`,
-        error.stack,
+        `Error while trying to find product with id ${id}: ${error?.message}`,
+        error?.stack,
       );
 
       if (error instanceof ExternalApiError) {
