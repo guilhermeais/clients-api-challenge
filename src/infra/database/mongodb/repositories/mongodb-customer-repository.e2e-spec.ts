@@ -99,7 +99,6 @@ describe(`${MongoDbCustomerRepository.name}`, () => {
           title: product.title,
           price: product.price,
           image: product.image,
-          createdAt: new Date(),
         },
       ]);
 
@@ -118,14 +117,12 @@ describe(`${MongoDbCustomerRepository.name}`, () => {
           title: product.title,
           price: product.price,
           image: product.image,
-          createdAt: new Date(),
         },
         {
           _id: newProduct.id.toValue(),
           title: newProduct.title,
           price: newProduct.price,
           image: newProduct.image,
-          createdAt: new Date(),
         },
       ]);
     });

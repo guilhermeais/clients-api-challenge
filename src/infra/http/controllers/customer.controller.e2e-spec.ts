@@ -35,6 +35,10 @@ describe(`${CustomerController.name} E2E`, () => {
     await app.init();
   });
 
+  beforeEach(() => {
+    productsServiceGateway.products.clear();
+  });
+
   describe('[GET] /customers', () => {
     it('should get empty customers if there is no customer', async () => {
       const response = await request(app.getHttpServer()).get('/customers');
@@ -351,7 +355,44 @@ describe(`${CustomerController.name} E2E`, () => {
       expect(customerFavoriteProducts[0].price).toBe(product.price);
     });
 
-    it('should return 404 if try to favorite an product that does not exists', async () => {
+    it('should favorite two products', async () => {
+      const products = Array.from({ length: 2 }, (_, i) => {
+        const product = makeProduct({
+          title: i.toString(),
+        });
+        productsServiceGateway.products.set(product.id.toString(), product);
+
+        return product;
+      });
+
+      const customer = makeCustomer();
+      await customerRepository.save(customer);
+
+      await Promise.all(
+        products.map(
+          async (product) =>
+            await request(app.getHttpServer())
+              .post(`/customers/${customer.id.toString()}/favorites`)
+              .send({
+                productId: product.id.toString(),
+              }),
+        ),
+      );
+
+      const { items: customerFavoriteProducts } =
+        await customerRepository.listFavoriteProducts({
+          customerId: customer.id,
+          limit: 1000,
+          page: 1,
+        });
+
+      expect(customerFavoriteProducts).toHaveLength(2);
+      expect(customerFavoriteProducts.map((p) => p.id)).toEqual(
+        products.map((p) => p.id),
+      );
+    });
+
+    it.only('should return 404 if try to favorite an product that does not exists', async () => {
       const customer = makeCustomer();
       await customerRepository.save(customer);
       const productId = new UniqueEntityID().toString();
