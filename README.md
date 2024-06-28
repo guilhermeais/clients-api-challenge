@@ -41,6 +41,14 @@ Este projeto foi desenv olvido utilizando NestJS e MongoDB, seguindo a arquitetu
     docker-compose up
     ```
 
+## Testando as Rotas da Aplicação 🛠️
+Para testar todas as rotas da aplicação, você pode utilizar o arquivo **[client.http](client.http)** incluído no projeto. Siga os passos abaixo:
+- Instale a extensão Rest Client do VS Code (humao.rest-client).
+- Abra o arquivo client.http.
+- Utilize os comandos no arquivo para testar as diferentes rotas da aplicação.
+O arquivo após a instalação da extensão ficará mais ou menos assim:
+![alt text](./assets/client-http-example.png)
+
 ## Executando a Suíte de Testes Automatizados 🧪 
 
 ### Testes Unitários
@@ -62,3 +70,20 @@ npm run test:cov
 ```
 
 ## Testes de carga 💪🏻
+Utilizei o K6 para realizar testes de carga no sistema.
+<p align="center">
+  <img src="./assets/k6-logo.png" alt="alt text">
+</p>
+
+[Clique aqui](./test/load-tests/unit/favorite-products.js) para ver o script que gera o teste de carga no fluxo de **criação de cliente e a adição de proutos aos favoritos** 
+
+### Como rodar os testes de stress
+⚠️ Para roda-los, primeiro, a aplicação já tem que estar rodando na porta 3000!
+```bash
+npm run test:load
+```
+### Ultimo resultado rodando na minha máquina 📋
+<p align="center">
+  <img src="./assets/k6-load-test-result.png" alt="alt text">
+</p>
+ 
