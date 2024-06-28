@@ -8,6 +8,7 @@ import { Email } from '@/domain/enterprise/entities/value-objects/email';
 import { Inject, Injectable } from '@nestjs/common';
 import { Collection, MongoClient } from 'mongodb';
 import { MONGO_DB_CONNECTION } from '../mongodb-connection';
+import { Cache } from '@/infra/cache/cache.interface';
 
 export type ProductDocument = {
   _id: string;
@@ -24,6 +25,8 @@ export type CustomerDocument = {
   updatedAt: Date;
   favoriteProducts?: ProductDocument[];
 };
+
+const getCustomerKey = (id: string) => `mongo-db-customer:${id.toString()}`;
 @Injectable()
 export class MongoDbCustomerRepository implements CustomerRepository {
   #customerCollection: Collection<CustomerDocument>;
@@ -31,6 +34,7 @@ export class MongoDbCustomerRepository implements CustomerRepository {
     @Inject(MONGO_DB_CONNECTION)
     private readonly connection: MongoClient,
     private readonly logger: Logger,
+    private readonly cache: Cache,
   ) {
     this.#customerCollection = this.connection.db().collection('customers');
   }
@@ -41,6 +45,8 @@ export class MongoDbCustomerRepository implements CustomerRepository {
         MongoDbCustomerRepository.name,
         `Saving customer ${customer.name} - ${customer.email.value}...`,
       );
+
+      await this.cache.del(getCustomerKey(customer.id.toString()));
 
       const favoriteProducts = customer
         .consumeNewFavoritedProducts()
@@ -95,21 +101,26 @@ export class MongoDbCustomerRepository implements CustomerRepository {
         MongoDbCustomerRepository.name,
         `Finding customer ${id.toString()}...`,
       );
-
-      const customer = await this.#customerCollection.findOne(
-        {
-          _id: id.toValue(),
-        },
-        {
-          projection: {
-            _id: 1,
-            name: 1,
-            email: 1,
-            createdAt: 1,
-            updatedAt: 1,
-          },
-        },
+      let customer: CustomerDocument = await this.cache.get<CustomerDocument>(
+        getCustomerKey(id.toString()),
       );
+
+      if (!customer) {
+        customer = await this.#customerCollection.findOne(
+          {
+            _id: id.toValue(),
+          },
+          {
+            projection: {
+              _id: 1,
+              name: 1,
+              email: 1,
+              createdAt: 1,
+              updatedAt: 1,
+            },
+          },
+        );
+      }
 
       if (!customer) {
         this.logger.warn(
@@ -191,9 +202,22 @@ export class MongoDbCustomerRepository implements CustomerRepository {
         `Checking if customer ${id.toString()} exists...`,
       );
 
-      const customer = await this.#customerCollection.findOne({
-        _id: id.toValue(),
-      });
+      let customer = await this.cache.get<CustomerDocument>(
+        getCustomerKey(id.toString()),
+      );
+
+      if (!customer) {
+        customer = await this.#customerCollection.findOne(
+          {
+            _id: id.toValue(),
+          },
+          {
+            projection: {
+              _id: 1,
+            },
+          },
+        );
+      }
 
       if (!customer) {
         this.logger.warn(
@@ -384,7 +408,6 @@ export class MongoDbCustomerRepository implements CustomerRepository {
               createdAt: '$favoriteProducts.createdAt',
             },
           },
-          { $sort: { title: 1 } },
           {
             $facet: {
               metadata: [

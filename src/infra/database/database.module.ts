@@ -1,12 +1,13 @@
+import { CustomerRepository } from '@/domain/application/gateways/repositories/customer-repository.interface';
 import { Module } from '@nestjs/common';
+import { CacheModule } from '../cache/cache.module';
 import { EnvModule } from '../env/env.module';
 import { ToolsModule } from '../tools/tools.module';
 import { MONGO_DB_CONNECTION_PROVIDER } from './mongodb/mongodb-connection';
-import { CustomerRepository } from '@/domain/application/gateways/repositories/customer-repository.interface';
 import { MongoDbCustomerRepository } from './mongodb/repositories/mongodb-customer-repository';
 
 @Module({
-  imports: [EnvModule, ToolsModule],
+  imports: [EnvModule, ToolsModule, CacheModule],
   providers: [
     MONGO_DB_CONNECTION_PROVIDER,
     {

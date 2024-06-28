@@ -23,16 +23,16 @@ export class DefaultExceptionFilter implements ExceptionFilter {
     if (exception instanceof HttpException) {
       const treatedError = this.getResponseErrorFromException(exception);
 
-      return response.status(treatedError.statusCode).json(treatedError);
+      return response.status(treatedError.statusCode).send(treatedError);
     }
 
     if (exception instanceof BaseError) {
       const treatedError = this.getResponseErrorFromBaseError(exception);
 
-      return response.status(treatedError.statusCode).json(treatedError);
+      return response.status(treatedError.statusCode).send(treatedError);
     }
 
-    return response.status(500).json({
+    return response.status(500).send({
       statusCode: 500,
       message: ['Internal Server Error'],
       error: 'Internal Server Error',

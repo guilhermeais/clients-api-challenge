@@ -1,23 +1,23 @@
 import { Logger } from '@/domain/application/gateways/tools/logger.interface';
 import { Injectable } from '@nestjs/common';
-import { pino } from 'pino';
+import { Logger as IPinoLogger } from 'pino';
 
 @Injectable()
 export class PinoLogger implements Logger {
-  #logger = pino();
+  constructor(private readonly pinoLogger: IPinoLogger) {}
 
   log(context: string, message: string): void {
-    this.#logger.info(`[${context}] ${message}`);
+    this.pinoLogger.info(`[${context}] ${message}`);
   }
 
   error(context: string, message: string, trace: string): void {
-    this.#logger.error(`[${context}] ${message}\n${trace}`, trace);
+    this.pinoLogger.error(`[${context}] ${message}\n${trace}`, trace);
   }
 
   warn(context: string, message: string): void {
-    this.#logger.warn(`[${context}] ${message}`);
+    this.pinoLogger.warn(`[${context}] ${message}`);
   }
   debug(context: string, message: string): void {
-    this.#logger.debug(`[${context}] ${message}`);
+    this.pinoLogger.debug(`[${context}] ${message}`);
   }
 }

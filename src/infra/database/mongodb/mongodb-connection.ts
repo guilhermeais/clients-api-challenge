@@ -14,7 +14,9 @@ export const MONGO_DB_CONNECTION_PROVIDER: Provider<MongoClient> = {
       'MongoDBConnection',
       `Connecting to mongodb with uri ${MONGO_URI} ⏳...`,
     );
-    const client = await new MongoClient(MONGO_URI).connect();
+    const client = await new MongoClient(MONGO_URI, {
+      maxPoolSize: 100,
+    }).connect();
 
     logger.log('MongoDBConnection', 'Connected to mongodb 🚀');
     await createIndexes(client, logger);
