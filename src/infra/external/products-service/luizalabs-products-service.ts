@@ -6,6 +6,7 @@ import { EnvService } from '@/infra/env/env.service';
 import { HttpClient } from '../http-client.interface';
 import { ExternalApiError } from '../errors/external-api-error';
 import { Injectable } from '@nestjs/common';
+import { Cache } from '@/infra/cache/cache.interface';
 
 export type LuizaLabsProduct = {
   price: number;
@@ -15,31 +16,46 @@ export type LuizaLabsProduct = {
   title: string;
 };
 
+const getProductCacheKey = (id: string) => `luiza-labs-product:${id}`;
+
 @Injectable()
 export class LuizaLabsProductsService implements ProductsServiceGateway {
   constructor(
     private readonly logger: Logger,
     private readonly env: EnvService,
     private readonly httpClient: HttpClient,
+    private readonly cache: Cache,
   ) {}
 
   async findById(id: string): Promise<Product> {
     try {
-      const baseUrl = this.env.get('PRODUCTS_SERVICE_URL');
-      const url = new URL(`${baseUrl}/product/${id}/`);
-
-      this.logger.log(
-        LuizaLabsProductsService.name,
-        `Requesting product from ${url.toString()}`,
+      let product: LuizaLabsProduct = await this.cache.get(
+        getProductCacheKey(id),
       );
 
-      const { body: product } =
-        await this.httpClient.get<LuizaLabsProduct>(url);
+      if (!product) {
+        this.logger.log(
+          LuizaLabsProductsService.name,
+          `Product with id ${id} not found in cache, fetching from external service`,
+        );
 
-      this.logger.log(
-        LuizaLabsProductsService.name,
-        `Found the product ${product.title} with id ${id}`,
-      );
+        const baseUrl = this.env.get('PRODUCTS_SERVICE_URL');
+        const url = new URL(`${baseUrl}/product/${id}/`);
+
+        this.logger.log(
+          LuizaLabsProductsService.name,
+          `Requesting product from ${url.toString()}`,
+        );
+
+        const { body } = await this.httpClient.get<LuizaLabsProduct>(url);
+        product = body;
+        await this.cache.set(getProductCacheKey(id), product);
+
+        this.logger.log(
+          LuizaLabsProductsService.name,
+          `Found the product ${product.title} with id ${id}`,
+        );
+      }
 
       return Product.restore(
         {

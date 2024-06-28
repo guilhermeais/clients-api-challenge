@@ -10,6 +10,7 @@ import {
   LuizaLabsProduct,
   LuizaLabsProductsService,
 } from './luizalabs-products-service';
+import { InMemoryCacheAdapter } from '@/infra/cache/in-memory-cache/in-memory-cache.adapter';
 
 function makeLuizaLabsProduct(
   modifications?: Partial<LuizaLabsProduct>,
@@ -29,6 +30,7 @@ describe(`${LuizaLabsProductsService.name}`, () => {
   let logger: MockProxy<Logger>;
   let httpClient: MockProxy<HttpClient>;
   let env: MockProxy<EnvService>;
+  let cache: InMemoryCacheAdapter;
 
   const baseUrl = 'http://localhost:3000';
   let defaultLuizaLabsProduct: LuizaLabsProduct;
@@ -49,8 +51,9 @@ describe(`${LuizaLabsProductsService.name}`, () => {
       status: 200,
     });
     env.get.mockReturnValue(baseUrl);
+    cache = new InMemoryCacheAdapter();
 
-    sut = new LuizaLabsProductsService(logger, env, httpClient);
+    sut = new LuizaLabsProductsService(logger, env, httpClient, cache);
   });
 
   afterAll(() => {
@@ -73,7 +76,7 @@ describe(`${LuizaLabsProductsService.name}`, () => {
       );
 
       expect(httpClient.get).toHaveBeenCalledWith(
-        new URL(`${baseUrl}/product/${defaultLuizaLabsProduct.id}`),
+        new URL(`${baseUrl}/product/${defaultLuizaLabsProduct.id}/`),
       );
     });
 
@@ -95,6 +98,26 @@ describe(`${LuizaLabsProductsService.name}`, () => {
       await expect(sut.findById(defaultLuizaLabsProduct.id)).rejects.toThrow(
         new ExternalApiError(500, 'Unexpected error'),
       );
+    });
+
+    it('should use the cached product if it exists on cache', async () => {
+      const product = await sut.findById(defaultLuizaLabsProduct.id);
+
+      expect(product).toEqual(
+        Product.restore(
+          {
+            image: defaultLuizaLabsProduct.image,
+            price: defaultLuizaLabsProduct.price,
+            title: defaultLuizaLabsProduct.title,
+          },
+          new UniqueEntityID(defaultLuizaLabsProduct.id),
+        ),
+      );
+      await sut.findById(defaultLuizaLabsProduct.id);
+      await sut.findById(defaultLuizaLabsProduct.id);
+      await sut.findById(defaultLuizaLabsProduct.id);
+
+      expect(httpClient.get).toHaveBeenCalledTimes(1);
     });
   });
 });
