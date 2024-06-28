@@ -17,7 +17,8 @@
     "test:watch": "vitest",
     "test:e2e": "vitest run --config ./vitest.config.e2e.ts",
     "test:e2e:watch": "vitest --config ./vitest.config.e2e.ts",
-    "test:cov": "npm run test -- --config ./vitest.config.cov.ts"
+    "test:cov": "npm run test -- --config ./vitest.config.cov.ts",
+    "test:load": "k6 run ./test/load-tests/unit/index.js"
   },
   "dependencies": {
     "@nestjs/common": "^10.0.0",
