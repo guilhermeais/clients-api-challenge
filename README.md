@@ -83,7 +83,27 @@ Utilizei o K6 para realizar testes de carga no sistema.
 npm run test:load
 ```
 ### Ultimo resultado rodando na minha máquina 📋
+Nesse teste, o cenário de favoritar um produto fazia com que cada cliente cadastrado favoritasse somente 1 produto! Obtendo um `p(95) de 21.92ms` e `65 requisições por segundo`, um resultado ok já que estou rodando tudo na minha máquina (1 instância mongodb, 1 do node)!
 <p align="center">
   <img src="./assets/k6-load-test-result.png" alt="alt text">
 </p>
- 
+
+### Deixando o teste mais realista e estressante 🔥
+No mesmo cenário de favoritar produtos, fiz com que todos clientes favoritassem **100 produtos** e não somente **1**, isso fez com que aumentassemos a quantidade de requisições de **9164** (ultimo teste) para **76220 (541 req/seg)** ! Esse aumento massivo de requisições, fez com que o `p(95)` aumentasse de **21.92ms** para **190.53ms** 
+<p align="center">
+  <img src="./assets/k6-load-test-result-after-change-scenario.png" alt="alt text">
+</p>
+
+### Algumas melhorias 🔧
+Após aplicar algumas melhorias como:
+- Adicionar fastify;
+- Clusterizar a aplicação;
+- Adicionar cache em pontos especificos que o mongodb era acessado;
+- Passa nível de log (variável `LOG_LEVEL`) para somente erros.
+
+Essas melhorias causaram drastivas melhorias, onde:
+- Aplicação conseguiu aceitar **181988** requisições **(1292 req/seg)**. Antes das melhorias, conseguia aceitar somente **76220 (541 req/seg)**;
+- Abaixou o `p(95)`de **190.53ms** para **42.94ms**.
+<p align="center">
+  <img src="./assets/k6-load-test-result-after-change-scenario-after-improv.png.png" alt="alt text">
+</p>
