@@ -43,6 +43,11 @@ export class AddProductToFavoritesUseCase
 
       const product = await this.productsServiceGateway.findById(productId);
 
+      this.logger.log(
+        AddProductToFavoritesUseCase.name,
+        `Product ${productId} found: ${product?.title}`,
+      );
+
       if (!product) {
         throw new EntityNotFoundError('Produto', productId);
       }
