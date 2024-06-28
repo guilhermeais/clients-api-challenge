@@ -1,6 +1,6 @@
-import { sleep, check, group } from 'k6';
-import http from 'k6/http';
 import { uuidv4 } from 'https://jslib.k6.io/k6-utils/1.4.0/index.js';
+import { check, group, sleep } from 'k6';
+import http from 'k6/http';
 
 const productIds = JSON.parse(open('./product-ids.json'));
 
@@ -26,21 +26,33 @@ function createCustomer() {
 
 function addFavoriteProduct(customerId) {
   const favoriteProductUrl = `${BASE_URL}/customers/${customerId}/favorites`;
-  const productId = productIds[Math.floor(Math.random() * productIds.length)];
+  const requests = productIds.map((productId) => {
+    return {
+      method: 'POST',
+      url: favoriteProductUrl,
+      body: JSON.stringify({ productId }),
+      params: {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      },
+    };
+  });
+  requests.push(requests[0]); // duplicate the first request to test unique product id
 
-  const res = http.post(favoriteProductUrl, { productId });
-  http.post(favoriteProductUrl, { productId }); // duplicate favorite product to test unique constraint
+  const responses = http.batch(requests);
 
-  check(
-    res,
-    {
-      'favorite product status was diff than 5xx': (r) => r.status < 500,
-      'favorite product is instant (<= 200)': (r) => r.timings.duration <= 200,
-    },
-    { name: 'Add Favorite Product' },
-  );
-
-  return res;
+  responses.forEach((res) => {
+    check(
+      res,
+      {
+        'favorite product status was diff than 5xx': (r) => r.status < 500,
+        'favorite product is instant (<= 200)': (r) =>
+          r.timings.duration <= 200,
+      },
+      { name: 'Add Favorite Product' },
+    );
+  });
 }
 
 function getFavoriteProducts(customerId) {
